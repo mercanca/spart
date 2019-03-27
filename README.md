@@ -19,7 +19,7 @@ PARTITION    CORES    CORES    NODES    NODES  PENDING  PENDING NODES NODES   DA
       all     1164     4340       37      142        0        0     1     -    NO-LIMIT      24      64
  ```
  
- The *RESOURCE PENDING* column shows core counts of pending jobs because of the bussy resource. The *OTHER PENDING* column shows core counts of pending jobs because of the other reasons such as license or other limits.
+ The **RESOURCE PENDING** column shows core counts of pending jobs because of the bussy resource. The **OTHER PENDING** column shows core counts of pending jobs because of the other reasons such as license or other limits.
  
  ## Compiling
  ```gcc -lslurm spart.c -o spart```
