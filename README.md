@@ -17,7 +17,10 @@ PARTITION    CORES    CORES    NODES    NODES  PENDING  PENDING NODES NODES   DA
     b224q      560     2548       20       91        0        0     8    40     1-00:00      28     128
   core40q      480     1400       12       35      900        0     1     -     7-00:00      40     192
       all     1164     4340       37      142        0        0     1     -    NO-LIMIT      24      64
- ```      
+ ```
+ 
+ The *RESOURCE PENDING* column shows core counts of pending jobs because of the bussy resource. The *OTHER PENDING* column shows core counts of pending jobs because of the other reasons such as license or other limits.
+ 
  ## Compiling
  ```gcc -lslurm spart.c -o spart```
  
