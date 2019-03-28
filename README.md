@@ -1,7 +1,8 @@
 # spart
 A user-oriented partition info command for slurm.
 
-Slurm does not contains a command to show user-oriented partition info. I wrote a command. I hope you will find it useful. 
+Slurm does not have a command showing partition info in a user-friendly way.
+I wrote a command, I hope you will find it useful. 
 
 ## Usage
 The spart command does not have any parameters.:
@@ -19,7 +20,9 @@ PARTITION    CORES    CORES    NODES    NODES  PENDING  PENDING NODES NODES   DA
       all     1164     4340       37      142        0        0     1     -    NO-LIMIT      24      64
  ```
  
- The **RESOURCE PENDING** column shows core counts of pending jobs because of the bussy resource. The **OTHER PENDING** column shows core counts of pending jobs because of the other reasons such as license or other limits.
+ The **RESOURCE PENDING** column shows core counts of pending jobs because of the busy resource. 
+ The **OTHER PENDING** column shows core counts of pending jobs because of the other reasons such as license or other limits. 
+ The **NODE MEM(GB)** column shows the memory of the lowest memory node in this partition.
  
  ## Compiling
  ```gcc -lslurm spart.c -o spart```
