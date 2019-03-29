@@ -5,7 +5,7 @@ Slurm does not have a command showing partition info in a user-friendly way.
 I wrote a command, I hope you will find it useful. 
 
 ## Usage
-The spart command does not have any parameters.:
+The spart command does have only  -m  parameter.:
 
 ```
 $ spart
@@ -23,8 +23,15 @@ PARTITION    CORES    CORES    NODES    NODES  PENDING  PENDING NODES NODES   DA
  The **RESOURCE PENDING** column shows core counts of pending jobs because of the busy resource. 
  The **OTHER PENDING** column shows core counts of pending jobs because of the other reasons such as license or other limits. 
  The **NODE MEM(GB)** column shows the memory of the lowest memory node in this partition.
+ If **-m** parameter was given, both the lowest and highest memory will be shown.
  
  ## Compiling
- ```gcc -lslurm spart.c -o spart```
- 
 
+ Compiling is very simple, if your slurm installed at default location:
+
+ ```gcc -lslurm spart.c -o spart```
+
+ If not, you should give locations of the headers and libraries:
+
+ ```gcc -lslurm spart.c -o spart -I/location/of/slurm/header/files/ -L/location/of/slurm/library/files/```
+ 
