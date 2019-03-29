@@ -21,8 +21,11 @@ PARTITION    CORES    CORES    NODES    NODES  PENDING  PENDING NODES NODES   DA
  ```
  
  The **RESOURCE PENDING** column shows core counts of pending jobs because of the busy resource. 
+
  The **OTHER PENDING** column shows core counts of pending jobs because of the other reasons such as license or other limits. 
+
  The **NODE MEM(GB)** column shows the memory of the lowest memory node in this partition.
+
  If **-m** parameter was given, both the lowest and highest memory will be shown.
  
  ## Compiling
