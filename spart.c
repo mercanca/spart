@@ -13,6 +13,9 @@
 #include <slurm/slurm.h>
 #include <slurm/slurm_errno.h>
 
+/* #define SPART_COMPILE_FOR_UHEM */
+
+#define SPART_INFO_STRING_SIZE 256
 
 /* Prints Command Usage and Exit */
 int spart_usage() 
@@ -36,13 +39,14 @@ int spart_usage()
   printf(
       "If the -m parameter was given, both the lowest and highest values will"
       " be shown in the CORES\n PERNODE and NODE MEM(GB) columns.\n\n");
+#ifdef SPART_COMPILE_FOR_UHEM
+  printf("This is UHeM Version of the spart command.\n");
+#endif
+  printf("spart version 0.1\n\n");
   exit(1);
 }
 
 
-/* #define SPART_COMPILE_FOR_UHEM */
-
-#define SPART_INFO_STRING_SIZE 256
 
 /* To store partition info */
 typedef struct spart_info 

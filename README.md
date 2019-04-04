@@ -5,7 +5,9 @@ Slurm does not have a command showing partition info in a user-friendly way.
 I wrote a command, I hope you will find it useful. 
 
 ## Usage
-The spart command does have only an optional -m  parameter.:
+The spart command does have only an optional -m  parameter. 
+
+The output of spart without the -m parameter is as below:
 
 ```
 $ spart
@@ -46,7 +48,9 @@ PARTITION    CORES    CORES    NODES    NODES  PENDING  PENDING NODES NODES   DA
  
  ## Compiling
 
- Compiling is very simple, if your slurm installed at default location:
+ Compiling is very simple. There is no need to have administrative rights (being root) to compile and use.
+
+ If your slurm installed at default location, You can compile the spart command as below:
 
  ```gcc -lslurm spart.c -o spart```
 
@@ -54,3 +58,4 @@ PARTITION    CORES    CORES    NODES    NODES  PENDING  PENDING NODES NODES   DA
 
  ```gcc -lslurm spart.c -o spart -I/location/of/slurm/header/files/ -L/location/of/slurm/library/files/```
  
+
