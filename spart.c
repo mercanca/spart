@@ -1,8 +1,7 @@
 /******************************************************************
 * spart    : a user-oriented partition info command for slurm
-* Author   : Cem Ahmet Mercan
+* Author   : Cem Ahmet Mercan, 2019-02-16
 * Licence  : GNU General Public License v2.0
-* FirstVer.: 2019
 * Note     : Some part of this code taken from slurm api man pages
 *******************************************************************/
 
@@ -20,32 +19,74 @@
 /* Prints Command Usage and Exit */
 int spart_usage() 
 {
-  printf("Usage: spart [-m]\n\n");
+  printf("\nUsage: spart [-m] [-a] [-h]\n\n");
   printf(
       "This program shows brief partition info with core count of available "
       "nodes and pending jobs.\n\n");
   printf(
+      "In the QUEUE PARTITION column, the * . ! # characters means 'default queue', "
+      "'hidden queue',\n 'you can submit a job, but will not start', and"
+      " 'you can not submit a job', repectively.\n\n");
+  printf(
       "The RESOURCE PENDING column shows core counts of pending jobs "
-      "because of the busy resource.\n");
+      "because of the busy resource.\n\n");
   printf(
       "The OTHER PENDING column shows core counts of pending jobs because "
       "of the other reasons such\n as license or other limits.\n\n");
   printf(
       "The CORES PERNODE column shows the core count of the node with "
-      "lowest core count in this partition.\n");
+      "lowest core count in this partition.\n\n");
   printf(
       "The NODE MEM(GB) column shows the memory of the lowest memory node "
       "in this partition.\n\n");
   printf(
       "If the -m parameter was given, both the lowest and highest values will"
       " be shown in the CORES\n PERNODE and NODE MEM(GB) columns.\n\n");
+  printf(
+      "If the -a parameter was given, hidden partitions also be shown.\n\n");
+  printf( "The -h parameter shows this usage text.\n\n");
 #ifdef SPART_COMPILE_FOR_UHEM
   printf("This is UHeM Version of the spart command.\n");
 #endif
-  printf("spart version 0.1\n\n");
+  printf("spart version 0.2\n\n");
   exit(1);
 }
 
+
+/* Condensed printing for big numbers (k,m) */
+void con_print(uint32_t num)
+{
+    char cresult[64];
+    sprintf (cresult,"%d",num);
+    switch (strlen(cresult))
+    {
+       case 5:
+       case 6:
+         printf("%5d%s ",(uint32_t) (num/1000),"k");
+         break;
+
+       case 7:
+         printf("%5.1f%s ",(float) (num/1000000.0f),"m");
+         break;
+
+       case 8:
+       case 9:
+         printf("%5d%s ",(uint32_t) (num/1000000),"m");
+         break;
+
+       case 10:
+         printf("%5.1f%s ",(float) (num/1000000000.0f),"g");
+         break;
+
+       case 11:
+       case 12:
+         printf("%5d%s ",(uint32_t) (num/1000000000),"g");
+         break;
+
+       default:
+         printf("%6d ", num);
+    }
+}
 
 
 /* To store partition info */
@@ -69,6 +110,7 @@ typedef struct spart_info
     uint16_t  min_mem_gb;
     uint16_t  max_mem_gb;
     char      partition_name[SPART_INFO_STRING_SIZE];
+    char      cflag;
 } spart_info_t; 
 
 
@@ -92,24 +134,34 @@ int main(int argc, char *argv[])
   char mem_result[SPART_INFO_STRING_SIZE];
   uint32_t state;
   int show_max_mem = 0;
+  int show_partition = 0;
 
   char partition_str[SPART_INFO_STRING_SIZE];
   char job_parts_str[SPART_INFO_STRING_SIZE];
 
-
   spart_info_t *spData = NULL;
   uint32_t partition_count = 0;
 
-  if (argc != 1)
+   
+  for (i = 1; i < argc; i++)
   {
-    if (strncmp(argv[1], "-m", 3) != 0)
-    {
-      spart_usage();
-    } else 
+    if (strncmp(argv[i], "-m", 3) == 0)
     {
       show_max_mem = 1;
+      continue;
     }
+ 
+    if (strncmp(argv[i], "-a", 3) == 0)
+    {
+      show_partition = SHOW_ALL;
+      continue;
+    } 
+
+    if (strncmp(argv[i], "-h", 3) != 0)
+      printf("\nUnknown parameter: %s\n",argv[i]);
+    spart_usage();
   }
+
 
   if (slurm_load_jobs((time_t)NULL, &job_buffer_ptr, SHOW_ALL))
   {
@@ -123,7 +175,7 @@ int main(int argc, char *argv[])
     exit(1);
   }
 
-  if (slurm_load_partitions((time_t)NULL, &part_buffer_ptr, 0))
+  if (slurm_load_partitions((time_t)NULL, &part_buffer_ptr, show_partition))
   {
     slurm_perror("slurm_load_partitions error");
     exit(1);
@@ -154,6 +206,7 @@ int main(int argc, char *argv[])
     spData[i].min_mem_gb = 0;
     spData[i].max_mem_gb = 0;
     /* partition_name[] */
+    spData[i].cflag = ' ';
   }
 
 
@@ -252,27 +305,47 @@ int main(int argc, char *argv[])
     spData[i].max_mem_gb=(uint16_t)(max_mem/1000u);
     spData[i].min_mem_gb=(uint16_t)(min_mem/1000u);
     strncpy(spData[i].partition_name,part_ptr->name,SPART_INFO_STRING_SIZE);
+
+    /* Partition States from less important to more important 
+    *  because, the last one overwrites previous one. */
+    if (part_ptr->flags & PART_FLAG_DEFAULT) spData[i].cflag='*';
+    if (part_ptr->flags & PART_FLAG_HIDDEN) spData[i].cflag='.';
+
+    if (part_ptr->flags & PART_FLAG_REQ_RESV) spData[i].cflag='!';
+    if (!(part_ptr->state_up & PARTITION_UP))
+    {
+      if (part_ptr->state_up & PARTITION_SUBMIT ) spData[i].cflag='!';
+      if (part_ptr->state_up & PARTITION_DRAIN ) spData[i].cflag='#';
+      if (part_ptr->state_up & PARTITION_INACTIVE ) spData[i].cflag='#';
+    }
+    if (part_ptr->flags & PART_FLAG_ROOT_ONLY) spData[i].cflag='#';
+
   }
 
 
   /* Output is printing */
   printf(
-      "       QUEUE     FREE    TOTAL     FREE    TOTAL RESOURCE    "
-      "OTHER   MIN   MAX MAXJOBTIME   CORES    NODE\n");
+      "      QUEUE    FREE  TOTAL   FREE  TOTAL RESORC  "
+      "OTHER    MIN    MAX MAXJOBTIME   CORES      NODE\n");
   printf(
-      "   PARTITION    CORES    CORES    NODES    NODES  PENDING  "
-      "PENDING NODES NODES  DAY-HR:MN PERNODE MEM(GB)\n");
+      "  PARTITION   CORES  CORES  NODES  NODES PENDNG "
+      "PENDNG  NODES  NODES  DAY-HR:MN PERNODE    MEM-GB\n");
 
   for (i = 0; i < partition_count; i++)
   {
-    printf("%12s %8d %8d %8d %8d %8d %8d %5d ", spData[i].partition_name, 
-           spData[i].free_cpu, spData[i].total_cpu, spData[i].free_node, 
-           spData[i].total_node, spData[i].waiting_resourse,
-           spData[i].waiting_other, spData[i].min_node);
+    strncat(spData[i].partition_name,&(spData[i].cflag),1);
+    printf("%12s ", spData[i].partition_name);
+    con_print(spData[i].free_cpu);
+    con_print(spData[i].total_cpu);
+    con_print(spData[i].free_node);
+    con_print(spData[i].total_node);
+    con_print(spData[i].waiting_resourse);
+    con_print(spData[i].waiting_other);
+    con_print(spData[i].min_node);
     if (spData[i].max_node == UINT_MAX)
-      printf("    - ");
+      printf("     - ");
     else
-      printf("%5d ", spData[i].max_node);
+      con_print(spData[i].max_node);
     if (spData[i].mjt_time == INFINITE)
       printf("  NO-LIMIT");
     else
@@ -285,8 +358,8 @@ int main(int argc, char *argv[])
     if ((show_max_mem == 1)&&(spData[i].min_mem_gb != spData[i].max_mem_gb )) 
       sprintf (mem_result,"%d-%d",spData[i].min_mem_gb,spData[i].max_mem_gb); 
     else  
-      sprintf (mem_result,"%7d",spData[i].min_mem_gb);
-    printf (" %7s\n",mem_result);
+      sprintf (mem_result,"%9d",spData[i].min_mem_gb);
+    printf (" %9s\n",mem_result);
   }
 
   /* free allocations */
