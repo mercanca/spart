@@ -24,11 +24,11 @@ $ spart
     core40q      40   1400      1     35    160      0      1      -    7-00:00      40     192
         all.    232   4340      8    142      0      0      1      -   NO-LIMIT      24      64
  ```
- In the **QUEUE PARTITION** column, the ** \* . ! # **  characters means 'default queue', 'hidden queue', 'you can submit a job, but will not start', and 'you can not submit a job', repectively.
+ In the **QUEUE PARTITION** column, the * . ! #  characters mean 'default queue', 'hidden queue', 'you can submit a job, but will not start', and 'you can not submit a job', repectively.
  
- The **RESOURCE PENDING** column shows core counts of pending jobs because of the busy resource. 
+ The **RESOURCE PENDING** column shows the core count of pending jobs because of the busy resource. 
 
- The **OTHER PENDING** column shows core counts of pending jobs because of the other reasons such as license or other limits. 
+ The **OTHER PENDING** column shows the core count of pending jobs because of the other reasons such as license or other limits. 
 
  The **CORES PERNODE** column shows the core count of the node with lowest core count in this partition.
 
@@ -50,7 +50,7 @@ $ spart
         all.    232   4340      8    142      0      0      1      -   NO-LIMIT   24-40  64-512
  ```
 
- If the **-a** parameter was given, hidden partitions also be shown.
+ If the **-a** parameter was given, hidden partitions also will be shown.
 
  The **-h** parameter prints usage info.
 
@@ -60,7 +60,7 @@ $ spart
 
  Compiling is very simple.
 
- If your slurm installed at default location, You can compile the spart command as below:
+ If your slurm installed at default location, you can compile the spart command as below:
 
  ```gcc -lslurm spart.c -o spart```
 
@@ -69,6 +69,6 @@ $ spart
  ```gcc -lslurm spart.c -o spart -I/location/of/slurm/header/files/ -L/location/of/slurm/library/files/```
 
  
- Also, There is no need to have administrative rights (being root) to compile and use. If you want to use the spart command as a regular user, You can compile and use at your home directory.
+ Also, there is no need to have administrative rights (being root) to compile and use. If you want to use the spart command as a regular user, you can compile and use at your home directory.
 
 
