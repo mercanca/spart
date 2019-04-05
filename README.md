@@ -34,7 +34,7 @@ $ spart
 
  The **NODE MEM(GB)** column shows the memory of the lowest memory node in this partition.
 
- If the **-m** parameter was given, both the lowest and highest values will be shown in the **CORES PERNODE** and **NODE MEM(GB)** columns:
+ If the **-m** parameter was given, both the lowest and highest values will be shown in the **CORES PERNODE** and **NODE MEM-GB** columns:
 
 ```
 $ spart
