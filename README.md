@@ -22,7 +22,7 @@ $ spart
     bigmemq       0    280      0     10      0      0      1      -    7-00:00      28     512
       b224q     168   2548      6     91      0      0      8     40    1-00:00      28     128
     core40q      40   1400      1     35    160      0      1      -    7-00:00      40     192
-        all.    232   4340      8    142      0      0      1      -   NO-LIMIT      24      64
+        all.    232   4340      8    142      0      0      1      -     -           24      64
  ```
  In the **QUEUE PARTITION** column, the * . ! #  characters mean 'default queue', 'hidden queue', 'you can submit a job, but will not start', and 'you can not submit a job', repectively.
  
@@ -49,7 +49,7 @@ $ spart
     bigmemq       0    280      0     10      0      0      1      -    7-00:00      28     512
       b224q     168   2548      6     91      0      0      8     40    1-00:00      28 128-512
     core40q      40   1400      1     35    160      0      1      -    7-00:00      40     192
-        all.    232   4340      8    142      0      0      1      -   NO-LIMIT   24-40  64-512
+        all.    232   4340      8    142      0      0      1      -     -        24-40  64-512
  ```
 
  If the **-a** parameter was given, hidden partitions also will be shown.
