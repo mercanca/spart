@@ -30,6 +30,8 @@ $ spart
 
  The **OTHER PENDING** column shows the core count of pending jobs because of the other reasons such as license or other limits. 
 
+ If **MIN NODES, MAX NODES, and MAXJOBTIME** limits are not setted for the all partitions in your cluster, corresponding column(s) will not be shown.
+
  The **CORES PERNODE** column shows the core count of the node with lowest core count in this partition.
 
  The **NODE MEM-GB** column shows the memory of the lowest memory node in this partition.
@@ -51,6 +53,22 @@ $ spart
  ```
 
  If the **-a** parameter was given, hidden partitions also will be shown.
+
+ If the **-g** parameter was given, the ouput shows each **GRES (gpu, mic etc.)** defined in that partition and (in paranteses) the total number of nodes in that partition containing that GRES:
+
+```
+       QUEUE   FREE  TOTAL   FREE  TOTAL RESORC  OTHER MAXJOBTIME   CORES   NODE   GRES
+   PARTITION  CORES  CORES  NODES  NODES PENDNG PENDNG NDAY-HR:MN PERNODE MEM-GB (COUNT)
+       defq*     56   2436      2     87      0     56    7-00:00      28    128 -
+     shortq      56   2604      2     93      0      0    0-01:00      28    128 gpu:2(12)
+      longq      72    336      3     14      0      0   21-00:00      24     64 -
+       gpuq       0    112      0      4      0      0    7-00:00      28    128 gpu:1(4)
+    bigmemq       0    280      0     10     28      0    7-00:00      28    512 -
+      b224q      56   2548      2     91      0      0    1-00:00      28    128 -
+    core40q       0   1400      0     35   2404      0    7-00:00      40    192 -
+        all.    128   4340      5    142      0      0     -           24     64 gpu:1(4),gpu:2(12)
+```
+
 
  The **-h** parameter prints usage info.
 
