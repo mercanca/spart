@@ -69,6 +69,7 @@ $ spart
         all.    128   4340      5    142      0      0     -           24     64 gpu:1(4),gpu:2(12)
 ```
 
+ If the **-l** parameter was given, all posible columns will be shown.
 
  The **-h** parameter prints usage info.
 
