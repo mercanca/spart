@@ -6,7 +6,7 @@ I wrote a command, I hope you will find it useful.
 
 ## Usage
 
-**spart [-m] [-a] [-h]**
+**spart [-m] [-a] [-g] [-l] [-h]**
 
 
 The output of spart without any parameters is as below:
