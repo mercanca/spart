@@ -26,7 +26,7 @@ int spart_usage() {
   printf(
       "In the QUEUE PARTITION column, the * . ! # characters means 'default "
       "queue', 'hidden queue',\n 'you can submit a job, but will not start',"
-      " and 'you can not submit a job', repectively.\n\n");
+      " and 'you can not submit a job', respectively.\n\n");
   printf(
       "The RESOURCE PENDING column shows core counts of pending jobs "
       "because of the busy resource.\n\n");
@@ -57,7 +57,7 @@ int spart_usage() {
 #ifdef SPART_COMPILE_FOR_UHEM
   printf("This is UHeM Version of the spart command.\n");
 #endif
-  printf("spart version 0.3\n\n");
+  printf("spart version 0.3.1\n\n");
   exit(1);
 }
 
@@ -96,19 +96,25 @@ void sp_gres_add(sp_gres_info_t spga[], uint16_t *sp_gres_count,
                  char *node_gres) {
   uint16_t i;
   int finded = 0;
+  char *strtmp = NULL;
+  char *grestok;
 
-  for (i = 0; i < *sp_gres_count; i++) {
-    if (strncmp(spga[i].gres_name, node_gres, SPART_INFO_STRING_SIZE) == 0) {
-      spga[i].count++;
-      finded = 1;
-      break;
+  for (grestok = strtok_r(node_gres, ",", &strtmp); grestok != NULL;
+       grestok = strtok_r(NULL, ",", &strtmp)) {
+
+    for (i = 0; i < *sp_gres_count; i++) {
+      if (strncmp(spga[i].gres_name, grestok, SPART_INFO_STRING_SIZE) == 0) {
+        spga[i].count++;
+        finded = 1;
+        break;
+      }
     }
-  }
 
-  if (finded == 0) {
-    strncpy(spga[*sp_gres_count].gres_name, node_gres, SPART_INFO_STRING_SIZE);
-    spga[*sp_gres_count].count = 1;
-    (*sp_gres_count)++;
+    if (finded == 0) {
+      strncpy(spga[*sp_gres_count].gres_name, grestok, SPART_INFO_STRING_SIZE);
+      spga[*sp_gres_count].count = 1;
+      (*sp_gres_count)++;
+    }
   }
 }
 
@@ -491,17 +497,21 @@ int main(int argc, char *argv[]) {
 
   /* Finds resource/other waiting core count for each partition */
   for (i = 0; i < job_buffer_ptr->record_count; i++) {
-    strncpy(job_parts_str, job_buffer_ptr->job_array[i].partition,
+    /* add ',' character at the begining and the end */
+    strncpy(job_parts_str, ",", SPART_INFO_STRING_SIZE);
+    strncat(job_parts_str, job_buffer_ptr->job_array[i].partition,
             SPART_INFO_STRING_SIZE);
-    /* add ',' character at the end */
-    strncat(job_parts_str + strlen(job_parts_str), ",", SPART_INFO_STRING_SIZE);
+    strncat(job_parts_str, ",", SPART_INFO_STRING_SIZE);
+
     for (j = 0; j < partition_count; j++) {
 
-      strncpy(partition_str, part_buffer_ptr->partition_array[j].name,
+      /* add ',' character at the begining and the end */
+      strncpy(partition_str, ",", SPART_INFO_STRING_SIZE);
+      strncat(partition_str, part_buffer_ptr->partition_array[j].name,
               SPART_INFO_STRING_SIZE);
-      /* add ',' character at the end */
       strncat(partition_str + strlen(partition_str), ",",
               SPART_INFO_STRING_SIZE);
+
       if (strstr(job_parts_str, partition_str) != NULL) {
         if (job_buffer_ptr->job_array[i].job_state == JOB_PENDING) {
           if ((job_buffer_ptr->job_array[i].state_reason == WAIT_RESOURCES) ||
