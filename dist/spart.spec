@@ -11,7 +11,7 @@ URL:        https://github.com/mercanca/%{name}
 Source:     https://github.com/mercanca/%{name}/archive/v%{version}/%{name}-%{version}.tar.gz
 
 
-BuildRequires:  slurm
+BuildRequires:  slurm-devel
 Requires:   slurm
 
 %description
