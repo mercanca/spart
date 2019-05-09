@@ -60,7 +60,7 @@ int spart_usage() {
 #ifdef SPART_COMPILE_FOR_UHEM
   printf("This is UHeM Version of the spart command.\n");
 #endif
-  printf("spart version 0.4.0\n\n");
+  printf("spart version 0.4.1\n\n");
   exit(1);
 }
 
@@ -84,6 +84,7 @@ typedef struct spart_info {
   uint16_t min_mem_gb;
   uint16_t max_mem_gb;
   char partition_name[SPART_INFO_STRING_SIZE];
+  char cluster_name[SPART_INFO_STRING_SIZE];
   char gres[SPART_INFO_STRING_SIZE];
   char cflag;
 } spart_info_t;
@@ -140,6 +141,7 @@ typedef struct sp_column_header {
 
 /* To storing Output headers */
 typedef struct sp_headers {
+  sp_column_header_t cluster_name;
   sp_column_header_t partition_name;
   sp_column_header_t free_cpu;
   sp_column_header_t total_cpu;
@@ -158,6 +160,12 @@ typedef struct sp_headers {
 
 /* Initialize all column headers */
 void sp_headers_set_defaults(sp_headers_t *sph) {
+  sph->cluster_name.visible = 0;
+  sph->cluster_name.column_width = 10;
+  strncpy(sph->cluster_name.line1, "   CLUSTER",
+          sph->cluster_name.column_width);
+  strncpy(sph->cluster_name.line2, "      NAME",
+          sph->cluster_name.column_width);
   sph->partition_name.visible = 1;
   sph->partition_name.column_width = 12;
   strncpy(sph->partition_name.line1, "       QUEUE",
@@ -218,7 +226,8 @@ void sp_headers_set_defaults(sp_headers_t *sph) {
 
 /* Sets all columns as visible */
 void sp_headers_set_all_visible(sp_headers_t *sph) {
-  sph->partition_name.visible = 1;
+  sph->cluster_name.visible = 1;
+  sph->partition_name.visible = SHOW_LOCAL;
   sph->free_cpu.visible = 1;
   sph->total_cpu.visible = 1;
   sph->free_node.visible = 1;
@@ -252,6 +261,7 @@ void sp_headers_print(sp_headers_t *sph) {
   line1[0] = 0;
   line2[0] = 0;
 
+  sp_column_header_print(line1, line2, &(sph->cluster_name));
   sp_column_header_print(line1, line2, &(sph->partition_name));
   sp_column_header_print(line1, line2, &(sph->free_cpu));
   sp_column_header_print(line1, line2, &(sph->total_cpu));
@@ -338,6 +348,9 @@ void con_strprint(char *str, uint16_t size, uint32_t num) {
 void partition_print(spart_info_t *sp, sp_headers_t *sph, int show_max_mem) {
   char mem_result[SPART_INFO_STRING_SIZE];
 
+  if (sph->cluster_name.visible) {
+    printf("%10s ", sp->cluster_name);
+  }
   if (sph->partition_name.visible) {
     strncat(sp->partition_name, &(sp->cflag), 1);
     printf("%12s ", sp->partition_name);
@@ -383,6 +396,7 @@ void partition_print(spart_info_t *sp, sp_headers_t *sph, int show_max_mem) {
 int main(int argc, char *argv[]) {
   uint32_t i, j;
   int k;
+  slurm_ctl_conf_t *conf_info_msg_ptr = NULL;
   partition_info_msg_t *part_buffer_ptr = NULL;
   partition_info_t *part_ptr;
   node_info_msg_t *node_buffer_ptr = NULL;
@@ -396,6 +410,7 @@ int main(int argc, char *argv[]) {
   uint16_t alloc_cpus = 0;
   char mem_result[SPART_INFO_STRING_SIZE];
   char strtmp[SPART_INFO_STRING_SIZE];
+  char cluster_name[SPART_INFO_STRING_SIZE];
 
 #ifdef SPART_COMPILE_FOR_UHEM
   char *reason;
@@ -437,6 +452,8 @@ int main(int argc, char *argv[]) {
 
     if (strncmp(argv[i], "-c", 3) == 0) {
       show_partition |= SHOW_FEDERATION;
+      show_partition &= (~SHOW_LOCAL);
+      spheaders.cluster_name.visible = 1;
       continue;
     }
 
@@ -448,7 +465,7 @@ int main(int argc, char *argv[]) {
     if (strncmp(argv[i], "-l", 3) == 0) {
       sp_headers_set_all_visible(&spheaders);
       show_max_mem = 1;
-      show_partition |= ( SHOW_FEDERATION | SHOW_ALL );
+      show_partition |= (SHOW_FEDERATION | SHOW_ALL | SHOW_LOCAL);
       show_gres = 1;
       show_min_nodes = 1;
       show_max_nodes = 1;
@@ -461,6 +478,14 @@ int main(int argc, char *argv[]) {
       printf("\nUnknown parameter: %s\n", argv[i]);
     spart_usage();
   }
+
+  if (slurm_load_ctl_conf((time_t)NULL, &conf_info_msg_ptr)) {
+    slurm_perror("slurm_load_ctl_conf error");
+    exit(1);
+  }
+
+  strncpy(cluster_name, conf_info_msg_ptr->cluster_name,
+          SPART_INFO_STRING_SIZE);
 
   if (slurm_load_jobs((time_t)NULL, &job_buffer_ptr, SHOW_ALL)) {
     slurm_perror("slurm_load_jobs error");
@@ -607,7 +632,14 @@ int main(int argc, char *argv[]) {
     spData[i].max_core = max_cpu;
     spData[i].max_mem_gb = (uint16_t)(max_mem / 1000u);
     spData[i].min_mem_gb = (uint16_t)(min_mem / 1000u);
-    strncpy(spData[i].partition_name, part_ptr->name, SPART_INFO_STRING_SIZE);
+    strncpy(spData[i].partition_name, part_ptr->name,
+            spheaders.partition_name.column_width);
+    if (part_ptr->cluster_name != NULL)
+      strncpy(spData[i].cluster_name, part_ptr->cluster_name,
+              spheaders.cluster_name.column_width);
+    else
+      strncpy(spData[i].cluster_name, cluster_name,
+              spheaders.cluster_name.column_width);
 
     /* Partition States from less important to more important
     *  because, the last one overwrites previous one. */
@@ -655,5 +687,6 @@ int main(int argc, char *argv[]) {
   slurm_free_job_info_msg(job_buffer_ptr);
   slurm_free_node_info_msg(node_buffer_ptr);
   slurm_free_partition_info_msg(part_buffer_ptr);
+  slurm_free_ctl_conf(conf_info_msg_ptr);
   exit(0);
 }
