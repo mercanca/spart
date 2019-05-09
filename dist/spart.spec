@@ -1,7 +1,7 @@
 # run "spectool -g -R spart.spec" to automatically download source files
 # spectool is part of the rpmdevtools package
 Name:       spart
-Version:    0.3.1
+Version:    0.4.0
 Release:    1%{?dist}
 Summary:    A tool to display user-oriented Slurm partition information.
 
@@ -11,7 +11,7 @@ URL:        https://github.com/mercanca/%{name}
 Source:     https://github.com/mercanca/%{name}/archive/v%{version}/%{name}-%{version}.tar.gz
 
 
-BuildRequires:  slurm-devel
+BuildRequires:  slurm
 Requires:   slurm
 
 %description

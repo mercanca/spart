@@ -48,6 +48,9 @@ int spart_usage() {
       " be shown in the CORES\n PERNODE and NODE MEM-GB columns.\n\n");
   printf("If the -a parameter was given, hidden partitions also be shown.\n\n");
   printf(
+      "If the -c parameter was given, partitions from federated clusters be "
+      "shown.\n\n");
+  printf(
       "If the -g parameter was given, the ouput shows each GRES (gpu, mic etc.)"
       " defined in that partition\n and (in paranteses) the total number of "
       "nodes in that partition containing that GRES.\n\n");
@@ -57,7 +60,7 @@ int spart_usage() {
 #ifdef SPART_COMPILE_FOR_UHEM
   printf("This is UHeM Version of the spart command.\n");
 #endif
-  printf("spart version 0.3.1\n\n");
+  printf("spart version 0.4.0\n\n");
   exit(1);
 }
 
@@ -428,7 +431,12 @@ int main(int argc, char *argv[]) {
     }
 
     if (strncmp(argv[i], "-a", 3) == 0) {
-      show_partition = SHOW_ALL;
+      show_partition |= SHOW_ALL;
+      continue;
+    }
+
+    if (strncmp(argv[i], "-c", 3) == 0) {
+      show_partition |= SHOW_FEDERATION;
       continue;
     }
 
@@ -440,7 +448,7 @@ int main(int argc, char *argv[]) {
     if (strncmp(argv[i], "-l", 3) == 0) {
       sp_headers_set_all_visible(&spheaders);
       show_max_mem = 1;
-      show_partition = 1;
+      show_partition |= ( SHOW_FEDERATION | SHOW_ALL );
       show_gres = 1;
       show_min_nodes = 1;
       show_max_nodes = 1;

@@ -54,6 +54,8 @@ $ spart
 
  If the **-a** parameter was given, hidden partitions also will be shown.
 
+ If the **-c** parameter was given, partitions from federated clusters be shown.
+
  If the **-g** parameter was given, the ouput shows each **GRES (gpu, mic etc.)** defined in that partition and (in paranteses) the total number of nodes in that partition containing that GRES:
 
 ```
