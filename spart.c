@@ -19,7 +19,7 @@
 
 /* Prints Command Usage and Exit */
 int spart_usage() {
-  printf("\nUsage: spart [-m] [-a] [-g] [-l] [-h]\n\n");
+  printf("\nUsage: spart [-m] [-a] [-c] [-g] [-l] [-h]\n\n");
   printf(
       "This program shows brief partition info with core count of available "
       "nodes and pending jobs.\n\n");
