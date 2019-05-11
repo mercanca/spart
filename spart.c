@@ -16,6 +16,7 @@
 
 #define SPART_INFO_STRING_SIZE 256
 #define SPART_GRES_ARRAY_SIZE 64
+#define SPART_MAX_COLUMN_SIZE 32
 
 /* Prints Command Usage and Exit */
 int spart_usage() {
@@ -60,7 +61,7 @@ int spart_usage() {
 #ifdef SPART_COMPILE_FOR_UHEM
   printf("This is UHeM Version of the spart command.\n");
 #endif
-  printf("spart version 0.4.1\n\n");
+  printf("spart version 0.5.0\n\n");
   exit(1);
 }
 
@@ -161,16 +162,16 @@ typedef struct sp_headers {
 /* Initialize all column headers */
 void sp_headers_set_defaults(sp_headers_t *sph) {
   sph->cluster_name.visible = 0;
-  sph->cluster_name.column_width = 10;
-  strncpy(sph->cluster_name.line1, "   CLUSTER",
+  sph->cluster_name.column_width = 8;
+  strncpy(sph->cluster_name.line1, " CLUSTER",
           sph->cluster_name.column_width);
-  strncpy(sph->cluster_name.line2, "      NAME",
+  strncpy(sph->cluster_name.line2, "    NAME",
           sph->cluster_name.column_width);
   sph->partition_name.visible = 1;
-  sph->partition_name.column_width = 12;
-  strncpy(sph->partition_name.line1, "       QUEUE",
+  sph->partition_name.column_width = 10;
+  strncpy(sph->partition_name.line1, "     QUEUE",
           sph->partition_name.column_width);
-  strncpy(sph->partition_name.line2, "   PARTITION",
+  strncpy(sph->partition_name.line2, " PARTITION",
           sph->partition_name.column_width);
   sph->free_cpu.visible = 1;
   sph->free_cpu.column_width = 6;
@@ -349,11 +350,11 @@ void partition_print(spart_info_t *sp, sp_headers_t *sph, int show_max_mem) {
   char mem_result[SPART_INFO_STRING_SIZE];
 
   if (sph->cluster_name.visible) {
-    printf("%10s ", sp->cluster_name);
+    printf("%*s ", sph->cluster_name.column_width, sp->cluster_name);
   }
   if (sph->partition_name.visible) {
     strncat(sp->partition_name, &(sp->cflag), 1);
-    printf("%12s ", sp->partition_name);
+    printf("%*s ", sph->partition_name.column_width, sp->partition_name);
   }
   if (sph->free_cpu.visible) con_print(sp->free_cpu);
   if (sph->total_cpu.visible) con_print(sp->total_cpu);
@@ -424,6 +425,9 @@ int main(int argc, char *argv[]) {
   int show_max_nodes = 0;
   int show_mjt_time = 0;
   int show_all_column = 0;
+  int partname_lenght=0;
+  int clusname_lenght=0;
+  int tmp_lenght=0;
 
   char partition_str[SPART_INFO_STRING_SIZE];
   char job_parts_str[SPART_INFO_STRING_SIZE];
@@ -633,13 +637,22 @@ int main(int argc, char *argv[]) {
     spData[i].max_mem_gb = (uint16_t)(max_mem / 1000u);
     spData[i].min_mem_gb = (uint16_t)(min_mem / 1000u);
     strncpy(spData[i].partition_name, part_ptr->name,
-            spheaders.partition_name.column_width);
-    if (part_ptr->cluster_name != NULL)
+            SPART_INFO_STRING_SIZE);
+    tmp_lenght=strlen(part_ptr->name);
+    if (tmp_lenght>partname_lenght) partname_lenght=tmp_lenght;
+
+    if (part_ptr->cluster_name != NULL) {
       strncpy(spData[i].cluster_name, part_ptr->cluster_name,
-              spheaders.cluster_name.column_width);
-    else
+              SPART_INFO_STRING_SIZE);
+      tmp_lenght=strlen(part_ptr->cluster_name);
+      if (tmp_lenght>partname_lenght) partname_lenght=tmp_lenght;
+    }
+    else {
       strncpy(spData[i].cluster_name, cluster_name,
-              spheaders.cluster_name.column_width);
+              SPART_INFO_STRING_SIZE);
+      tmp_lenght=strlen(cluster_name);
+      if (tmp_lenght>clusname_lenght) clusname_lenght=tmp_lenght;
+    }
 
     /* Partition States from less important to more important
     *  because, the last one overwrites previous one. */
@@ -667,6 +680,44 @@ int main(int argc, char *argv[]) {
         strncat(spData[i].gres, mem_result, SPART_INFO_STRING_SIZE);
       }
     }
+  }
+
+  /* for the status character at the end of the partition name*/
+  partname_lenght++;
+  if (partname_lenght>spheaders.partition_name.column_width) {
+    j=partname_lenght-spheaders.partition_name.column_width;
+
+    strncpy(strtmp, spheaders.partition_name.line1, SPART_INFO_STRING_SIZE);
+    strcpy(spheaders.partition_name.line1," ");
+    for(k=1;k<j;k++)
+      strncat(spheaders.partition_name.line1," ", partname_lenght);
+    strncat(spheaders.partition_name.line1, strtmp, partname_lenght);
+
+    strncpy(strtmp, spheaders.partition_name.line2, SPART_INFO_STRING_SIZE);
+    strcpy(spheaders.partition_name.line2," ");
+    for(k=1;k<j;k++)
+      strncat(spheaders.partition_name.line2," ", partname_lenght);
+    strncat(spheaders.partition_name.line2, strtmp, partname_lenght);
+
+    spheaders.partition_name.column_width=partname_lenght;
+  }
+
+  if (clusname_lenght>spheaders.cluster_name.column_width) {
+    j=clusname_lenght-spheaders.cluster_name.column_width;
+
+    strncpy(strtmp, spheaders.cluster_name.line1, SPART_INFO_STRING_SIZE);
+    strcpy(spheaders.cluster_name.line1," ");
+    for(k=1;k<j;k++)
+      strncat(spheaders.cluster_name.line1," ", clusname_lenght);
+    strncat(spheaders.cluster_name.line1, strtmp, clusname_lenght);
+
+    strncpy(strtmp, spheaders.cluster_name.line2, SPART_INFO_STRING_SIZE);
+    strcpy(spheaders.cluster_name.line2," ");
+    for(k=1;k<j;k++)
+      strncat(spheaders.cluster_name.line2," ", clusname_lenght);
+    strncat(spheaders.cluster_name.line2, strtmp, clusname_lenght);
+
+    spheaders.cluster_name.column_width=clusname_lenght;
   }
 
   if (!show_all_column) {
