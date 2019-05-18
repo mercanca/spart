@@ -27,6 +27,7 @@ $ spart
 ```
 
 In the **STA-TUS** column, the characters means, the partition is:
+```
 	*	default partition (default queue),
 	.	hidden partition,
 	C	closed to both the job submit and run,
@@ -34,6 +35,7 @@ In the **STA-TUS** column, the characters means, the partition is:
 	D	open to the job submit, but the submitted jobs will not run,
 	R	open for only root, or closed to root (if you are root),
 	A	closed to your account(s).
+```
 
 The **RESOURCE PENDING** column shows core counts of pending jobs because of the busy resource.
 
