@@ -49,20 +49,20 @@ The **NODE MEM-GB** column shows the memory of the lowest memory node in this pa
 
 Parameters:
 
-	**-m**	both the lowest and highest values will be shown in the **CORES /NODE**
+**-m**	both the lowest and highest values will be shown in the **CORES /NODE**
 		and **NODE MEM-GB** columns.
 
-	**-a**	hidden partitions also be shown.
+**-a**	hidden partitions also be shown.
 
-	**-c**	partitions from federated clusters be shown.
+**-c**	partitions from federated clusters be shown.
 
-	**-g**	the ouput shows each GRES (gpu, mic etc.) defined in that partition
+**-g**	the ouput shows each GRES (gpu, mic etc.) defined in that partition
 		and (in paranteses) the total number of nodes in that partition
 		containing that GRES.
 
-	**-l**	all posible columns will be shown, except the federated clusters column.
+**-l**	all posible columns will be shown, except the federated clusters column.
 
-	**-h**	shows this usage text.
+**-h**	shows this usage text.
 
 ```
 $ spart -l
