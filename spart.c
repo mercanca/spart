@@ -20,9 +20,14 @@
 #define SPART_GRES_ARRAY_SIZE 64
 #define SPART_MAX_COLUMN_SIZE 32
 
+
 /* Prints Command Usage and Exit */
 int spart_usage() {
-  printf("\nUsage: spart [-m] [-a] [-c] [-g] [-l] [-h]\n\n");
+  printf("\nUsage: spart [-m] [-a] "
+#ifdef __slurmdb_cluster_rec_t_defined
+"[-c] "
+#endif
+"[-g] [-l] [-h]\n\n");
   printf(
       "This program shows brief partition info with core count of available "
       "nodes and pending jobs.\n\n");
@@ -56,8 +61,10 @@ int spart_usage() {
       "\t-m\tboth the lowest and highest values will be shown in the CORES"
       " PERNODE\n\t\tand NODE MEM-GB columns.\n\n");
   printf("\t-a\thidden partitions also be shown.\n\n");
+#ifdef __slurmdb_cluster_rec_t_defined
   printf(
       "\t-c\tpartitions from federated clusters be shown.\n\n");
+#endif
   printf(
       "\t-g\tthe ouput shows each GRES (gpu, mic etc.)"
       " defined in that partition\n\t\tand (in paranteses) the total number of "
@@ -69,7 +76,7 @@ int spart_usage() {
 #ifdef SPART_COMPILE_FOR_UHEM
   printf("This is UHeM Version of the spart command.\n");
 #endif
-  printf("spart version 0.6.0\n\n");
+  printf("spart version 0.6.1\n\n");
   exit(1);
 }
 
@@ -92,8 +99,10 @@ typedef struct spart_info {
   uint16_t max_core;
   uint16_t min_mem_gb;
   uint16_t max_mem_gb;
-  char partition_name[SPART_INFO_STRING_SIZE];
-  char cluster_name[SPART_INFO_STRING_SIZE];
+  char partition_name[SPART_MAX_COLUMN_SIZE];
+#ifdef __slurmdb_cluster_rec_t_defined
+  char cluster_name[SPART_MAX_COLUMN_SIZE];
+#endif
   char gres[SPART_INFO_STRING_SIZE];
   char partition_status[SPART_MAX_COLUMN_SIZE];
 } spart_info_t;
@@ -170,7 +179,9 @@ typedef struct sp_column_header {
 
 /* To storing Output headers */
 typedef struct sp_headers {
+#ifdef __slurmdb_cluster_rec_t_defined
   sp_column_header_t cluster_name;
+#endif
   sp_column_header_t partition_name;
   sp_column_header_t partition_status;
   sp_column_header_t free_cpu;
@@ -190,10 +201,12 @@ typedef struct sp_headers {
 
 /* Initialize all column headers */
 void sp_headers_set_defaults(sp_headers_t *sph) {
+#ifdef __slurmdb_cluster_rec_t_defined
   sph->cluster_name.visible = 0;
   sph->cluster_name.column_width = 8;
   strncpy(sph->cluster_name.line1, " CLUSTER", sph->cluster_name.column_width);
   strncpy(sph->cluster_name.line2, "    NAME", sph->cluster_name.column_width);
+#endif
   sph->partition_name.visible = 1;
   sph->partition_name.column_width = 10;
   strncpy(sph->partition_name.line1, "     QUEUE",
@@ -260,7 +273,9 @@ void sp_headers_set_defaults(sp_headers_t *sph) {
 
 /* Sets all columns as visible */
 void sp_headers_set_parameter_L(sp_headers_t *sph) {
+#ifdef __slurmdb_cluster_rec_t_defined
   sph->cluster_name.visible = 0;
+#endif
   sph->partition_name.visible = SHOW_LOCAL;
   sph->partition_status.visible = 1;
   sph->free_cpu.visible = 1;
@@ -301,7 +316,9 @@ void sp_headers_print(sp_headers_t *sph) {
   line1[0] = 0;
   line2[0] = 0;
 
+#ifdef __slurmdb_cluster_rec_t_defined
   sp_column_header_print(line1, line2, &(sph->cluster_name));
+#endif
   sp_column_header_print(line1, line2, &(sph->partition_name));
   sp_column_header_print(line1, line2, &(sph->partition_status));
   sp_column_header_print(line1, line2, &(sph->free_cpu));
@@ -389,8 +406,10 @@ void con_strprint(char *str, uint16_t size, uint32_t num) {
 void partition_print(spart_info_t *sp, sp_headers_t *sph, int show_max_mem) {
   char mem_result[SPART_INFO_STRING_SIZE];
 
+#ifdef __slurmdb_cluster_rec_t_defined
   if (sph->cluster_name.visible) 
     printf("%*s ", sph->cluster_name.column_width, sp->cluster_name);
+#endif
   if (sph->partition_name.visible) 
     printf("%*s ", sph->partition_name.column_width, sp->partition_name);
   if (sph->partition_status.visible) 
@@ -448,7 +467,6 @@ int main(int argc, char *argv[]) {
   slurmdb_assoc_cond_t assoc_cond;
   List assoc_list = NULL;
   ListIterator itr = NULL;
-  assoc_cond.acct_list = slurm_list_create(NULL);
   slurmdb_assoc_rec_t *assoc;
 
   uint32_t mem, cpus, min_mem, max_mem;
@@ -460,14 +478,17 @@ int main(int argc, char *argv[]) {
   uint16_t alloc_cpus = 0;
   char mem_result[SPART_INFO_STRING_SIZE];
   char strtmp[SPART_INFO_STRING_SIZE];
-  char cluster_name[SPART_INFO_STRING_SIZE];
   char user_name[SPART_INFO_STRING_SIZE];
+#ifdef __slurmdb_cluster_rec_t_defined
+  char cluster_name[SPART_INFO_STRING_SIZE];
+#endif
 
 #ifdef SPART_COMPILE_FOR_UHEM
   char *reason;
 #endif
 
   uint32_t state;
+  int tmp_lenght = 0;
   int show_max_mem = 0;
   int show_partition = 0;
   int show_min_nodes = 0;
@@ -476,8 +497,9 @@ int main(int argc, char *argv[]) {
   int show_parameter_L = 0;
   int show_gres = 0;
   int partname_lenght = 0;
+#ifdef __slurmdb_cluster_rec_t_defined
   int clusname_lenght = 0;
-  int tmp_lenght = 0;
+#endif
 
   char partition_str[SPART_INFO_STRING_SIZE];
   char job_parts_str[SPART_INFO_STRING_SIZE];
@@ -513,12 +535,14 @@ int main(int argc, char *argv[]) {
       continue;
     }
 
+#ifdef __slurmdb_cluster_rec_t_defined
     if (strncmp(argv[i], "-c", 3) == 0) {
       show_partition |= SHOW_FEDERATION;
       show_partition &= (~SHOW_LOCAL);
       spheaders.cluster_name.visible = 1;
       continue;
     }
+#endif
 
     if (strncmp(argv[i], "-g", 3) == 0) {
       spheaders.gres.visible = 1;
@@ -562,8 +586,10 @@ int main(int argc, char *argv[]) {
     exit(1);
   }
 
+#ifdef __slurmdb_cluster_rec_t_defined
   strncpy(cluster_name, conf_info_msg_ptr->cluster_name,
-          SPART_INFO_STRING_SIZE);
+          SPART_MAX_COLUMN_SIZE);
+#endif
 
   /* Getting user account info */
   db_conn = slurmdb_connection_get();
@@ -575,6 +601,7 @@ int main(int argc, char *argv[]) {
   memset(&assoc_cond, 0, sizeof(slurmdb_assoc_cond_t));
   assoc_cond.user_list = slurm_list_create(NULL);
   slurm_list_append(assoc_cond.user_list, user_name);
+  assoc_cond.acct_list = slurm_list_create(NULL);
 
   assoc_list = slurmdb_associations_get(db_conn, &assoc_cond);
   itr = slurm_list_iterator_create(assoc_list);
@@ -616,7 +643,9 @@ int main(int argc, char *argv[]) {
     spData[i].min_mem_gb = 0;
     spData[i].max_mem_gb = 0;
     /* partition_name[] */
+#ifdef __slurmdb_cluster_rec_t_defined
     spData[i].cluster_name[0] = 0;
+#endif
     spData[i].partition_name[0] = 0;
     spData[i].partition_status[0] = 0;
   }
@@ -725,20 +754,22 @@ int main(int argc, char *argv[]) {
     spData[i].max_core = max_cpu;
     spData[i].max_mem_gb = (uint16_t)(max_mem / 1000u);
     spData[i].min_mem_gb = (uint16_t)(min_mem / 1000u);
-    strncpy(spData[i].partition_name, part_ptr->name, SPART_INFO_STRING_SIZE);
+    strncpy(spData[i].partition_name, part_ptr->name, SPART_MAX_COLUMN_SIZE);
     tmp_lenght = strlen(part_ptr->name);
     if (tmp_lenght > partname_lenght) partname_lenght = tmp_lenght;
 
+#ifdef __slurmdb_cluster_rec_t_defined
     if (part_ptr->cluster_name != NULL) {
       strncpy(spData[i].cluster_name, part_ptr->cluster_name,
-              SPART_INFO_STRING_SIZE);
+              SPART_MAX_COLUMN_SIZE);
       tmp_lenght = strlen(part_ptr->cluster_name);
       if (tmp_lenght > partname_lenght) partname_lenght = tmp_lenght;
     } else {
-      strncpy(spData[i].cluster_name, cluster_name, SPART_INFO_STRING_SIZE);
+      strncpy(spData[i].cluster_name, cluster_name, SPART_MAX_COLUMN_SIZE);
       tmp_lenght = strlen(cluster_name);
       if (tmp_lenght > clusname_lenght) clusname_lenght = tmp_lenght;
     }
+#endif
 
     /* Partition States from more important to less important
     *  because, there is limited space. */
@@ -812,6 +843,7 @@ int main(int argc, char *argv[]) {
     spheaders.partition_name.column_width = partname_lenght;
   }
 
+#ifdef __slurmdb_cluster_rec_t_defined
   if (clusname_lenght > spheaders.cluster_name.column_width) {
     j = clusname_lenght - spheaders.cluster_name.column_width;
 
@@ -829,6 +861,7 @@ int main(int argc, char *argv[]) {
 
     spheaders.cluster_name.column_width = clusname_lenght;
   }
+#endif
 
   /* If these column at default values, don't show */
   if (!show_parameter_L) {
