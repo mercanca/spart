@@ -552,7 +552,11 @@ int main(int argc, char *argv[]) {
     if (strncmp(argv[i], "-l", 3) == 0) {
       sp_headers_set_parameter_L(&spheaders);
       show_max_mem = 1;
+#ifdef __slurmdb_cluster_rec_t_defined
       show_partition |= (SHOW_FEDERATION | SHOW_ALL | SHOW_LOCAL);
+#else
+      show_partition |=SHOW_ALL;
+#endif
       show_gres = 1;
       show_min_nodes = 1;
       show_max_nodes = 1;
