@@ -76,7 +76,7 @@ int spart_usage() {
 #ifdef SPART_COMPILE_FOR_UHEM
   printf("This is UHeM Version of the spart command.\n");
 #endif
-  printf("spart version 0.6.1\n\n");
+  printf("spart version 0.6.2\n\n");
   exit(1);
 }
 
@@ -275,8 +275,10 @@ void sp_headers_set_defaults(sp_headers_t *sph) {
 void sp_headers_set_parameter_L(sp_headers_t *sph) {
 #ifdef __slurmdb_cluster_rec_t_defined
   sph->cluster_name.visible = 0;
-#endif
   sph->partition_name.visible = SHOW_LOCAL;
+#else
+  sph->partition_name.visible = 1;
+#endif
   sph->partition_status.visible = 1;
   sph->free_cpu.visible = 1;
   sph->total_cpu.visible = 1;
