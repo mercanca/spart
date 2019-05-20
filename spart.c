@@ -465,11 +465,16 @@ int main(int argc, char *argv[]) {
   node_info_msg_t *node_buffer_ptr = NULL;
   job_info_msg_t *job_buffer_ptr = NULL;
 
+#if SLURM_VERSION_NUMBER > SLURM_VERSION_NUM(18,7,0)
   void **db_conn = NULL;
   slurmdb_assoc_cond_t assoc_cond;
   List assoc_list = NULL;
   ListIterator itr = NULL;
   slurmdb_assoc_rec_t *assoc;
+
+  int user_acct_count;
+  char **user_acct = NULL;
+#endif
 
   uint32_t mem, cpus, min_mem, max_mem;
   uint32_t max_cpu, min_cpu, free_cpu, free_node;
@@ -505,9 +510,6 @@ int main(int argc, char *argv[]) {
 
   char partition_str[SPART_INFO_STRING_SIZE];
   char job_parts_str[SPART_INFO_STRING_SIZE];
-
-  int user_acct_count;
-  char **user_acct = NULL;
 
   spart_info_t *spData = NULL;
   uint32_t partition_count = 0;
@@ -786,6 +788,7 @@ int main(int argc, char *argv[]) {
     if (part_ptr->flags & PART_FLAG_HIDDEN)
         strncat(spData[i].partition_status, ".", SPART_MAX_COLUMN_SIZE);
 
+#if SLURM_VERSION_NUMBER > SLURM_VERSION_NUM(18,7,0)
     if (part_ptr->allow_accounts != NULL) {
       strncpy(strtmp, part_ptr->allow_accounts, SPART_INFO_STRING_SIZE);
       if (!sp_account_check(user_acct, user_acct_count, strtmp))
@@ -797,6 +800,7 @@ int main(int argc, char *argv[]) {
       if (sp_account_check(user_acct, user_acct_count, strtmp))
         strncat(spData[i].partition_status, "A", SPART_MAX_COLUMN_SIZE);
     }
+#endif
 
     if (strncmp(user_name, "root", SPART_INFO_STRING_SIZE) == 0) {
       if (part_ptr->flags & PART_FLAG_NO_ROOT)
