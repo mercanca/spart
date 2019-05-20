@@ -76,7 +76,7 @@ int spart_usage() {
 #ifdef SPART_COMPILE_FOR_UHEM
   printf("This is UHeM Version of the spart command.\n");
 #endif
-  printf("spart version 0.6.2\n\n");
+  printf("spart version 0.6.3\n\n");
   exit(1);
 }
 
@@ -597,6 +597,7 @@ int main(int argc, char *argv[]) {
           SPART_MAX_COLUMN_SIZE);
 #endif
 
+#if SLURM_VERSION_NUMBER > SLURM_VERSION_NUM(18,7,0)
   /* Getting user account info */
   db_conn = slurmdb_connection_get();
   if (errno != SLURM_SUCCESS) {
@@ -625,6 +626,7 @@ int main(int argc, char *argv[]) {
 
   /* if (db_conn != NULL)
     slurmdb_connection_close(db_conn); */
+#endif
 
   /* Initialize spart data for each partition */
   partition_count = part_buffer_ptr->record_count;

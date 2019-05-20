@@ -1,19 +1,19 @@
-# spart
-A user-oriented partition info command for slurm.
+ # spart
+ A user-oriented partition info command for slurm.
 
-Slurm does not have a command showing partition info in a user-friendly way.
-I wrote a command, I hope you will find it useful. 
+ Slurm does not have a command showing partition info in a user-friendly way.
+ I wrote a command, I hope you will find it useful. 
 
 ## Usage
 
-**Usage: spart [-m] [-a] [-c] [-g] [-l] [-h]**
+ **Usage: spart [-m] [-a] [-c] [-g] [-l] [-h]**
 
-This program shows **the user specific brief partition info** with core count of available nodes and pending jobs.
+ This program shows **the user specific brief partition info** with core count of available nodes and pending jobs.
 
-The output of spart without any parameters is as below:
+ The output of spart without any parameters is as below:
 
 ```
-$ spart
+ $ spart
      QUEUE STA   FREE  TOTAL   FREE  TOTAL RESORC  OTHER    MIN    MAX MAXJOBTIME  CORES   NODE
  PARTITION TUS  CORES  CORES  NODES  NODES PENDNG PENDNG  NODES  NODES  DAY-HR:MN  /NODE MEM-GB
       defq   *   1036   2436     37     87      0    840      1      -    7-00:00     28    128
@@ -26,7 +26,7 @@ $ spart
        all  .A   1152   4340     41    142      0      0      1      -     -          24     64
 ```
 
-In the **STA-TUS** column, the characters means, the partition is:
+ In the **STA-TUS** column, the characters means, the partition is:
 ```
 	*	default partition (default queue),
 	.	hidden partition,
@@ -37,34 +37,34 @@ In the **STA-TUS** column, the characters means, the partition is:
 	A	closed to your account(s).
 ```
 
-The **RESOURCE PENDING** column shows core counts of pending jobs because of the busy resource.
+ The **RESOURCE PENDING** column shows core counts of pending jobs because of the busy resource.
 
-The **OTHER PENDING** column shows core counts of pending jobs because of the other reasons such
+ The **OTHER PENDING** column shows core counts of pending jobs because of the other reasons such
  as license or other limits.
 
-If **MIN NODES, MAX NODES,** and **MAXJOBTIME** limits are not setted for the all partitions in your
+ If **MIN NODES, MAX NODES,** and **MAXJOBTIME** limits are not setted for the all partitions in your
  cluster, corresponding column(s) will not be shown.
 
-The **CORES /NODE** column shows the core count of the node with lowest core count in the partition.
+ The **CORES /NODE** column shows the core count of the node with lowest core count in the partition.
 
-The **NODE MEM-GB** column shows the memory of the lowest memory node in this partition.
+ The **NODE MEM-GB** column shows the memory of the lowest memory node in this partition.
 
-Parameters:
+ Parameters:
 
-**-m**	both the lowest and highest values will be shown in the **CORES /NODE**
+ **-m**	both the lowest and highest values will be shown in the **CORES /NODE**
 		and **NODE MEM-GB** columns.
 
-**-a**	hidden partitions also be shown.
+ **-a**	hidden partitions also be shown.
 
-**-c**	partitions from federated clusters be shown.
+ **-c**	partitions from federated clusters be shown.
 
-**-g**	the ouput shows each GRES (gpu, mic etc.) defined in that partition
+ **-g**	the ouput shows each GRES (gpu, mic etc.) defined in that partition
 		and (in paranteses) the total number of nodes in that partition
 		containing that GRES.
 
-**-l**	all posible columns will be shown, except the federated clusters column.
+ **-l**	all posible columns will be shown, except the federated clusters column.
 
-**-h**	shows this usage text.
+ **-h**	shows this usage text.
 
 ```
 $ spart -l
@@ -81,8 +81,13 @@ $ spart -l
 ```
 
 
+## Requirments
+
+
+ Some features of the spart requires Slurm 18.08 or newer. With older versions, the spart works with reduced feature set such as without showing the federated clusters column and user-spesific output.
+
  
- ## Compiling
+## Compiling
 
  Compiling is very simple.
 
