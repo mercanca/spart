@@ -81,7 +81,7 @@ $ spart -l
 ```
 
 
-## Requirments
+## Requirements
 
 
  Some features of the spart requires Slurm 18.08 or newer. With older versions, the spart works with reduced feature set such as without showing the federated clusters column and user-spesific output.
@@ -105,6 +105,10 @@ $ spart -l
 
 ## Help
 
- If you want to help this project, I need to test the spart at different clusters and slurm versions. If you run spart (two outputs with -l and -c parameters) at your cluster, and submit the output as an issue with brief slurm info; It will be great. The exact resources numbers, features and names of the resources are not important. If you want, you can change the all of them. I need to see the spart is working correctly with different configurations such as the federated cluster, huge node count, different plugins etc. Thanks.
+ If you want to help this project, I need to test the spart at different clusters and slurm versions. If you run spart (two outputs with -l and -c parameters) at your cluster, and submit the output as an issue with brief slurm info; it will be great.
+ 
+ The exact resources numbers, features and names of the resources are not important. If you want, you can change the all of them. I need to see the spart is working correctly with different configurations such as the federated cluster, huge node count, different plugins etc.
+ 
+ Thanks.
  
  
