@@ -105,6 +105,6 @@ $ spart -l
 
 ## Help
 
- If you want to help this project, I need to test the spart at different clusters and slurm versions. If you run spart at your cluster, and submit the output as an issue with brief slurm info; It will be great. The exact resources numbers, features and names of the resources are not important. You can change the all of them. I need to see the spart is working correctly with different configurations such as the federated cluster, huge node count, different plugins etc. Thanks.
+ If you want to help this project, I need to test the spart at different clusters and slurm versions. If you run spart (two outputs with -l and -c parameters) at your cluster, and submit the output as an issue with brief slurm info; It will be great. The exact resources numbers, features and names of the resources are not important. If you want, you can change the all of them. I need to see the spart is working correctly with different configurations such as the federated cluster, huge node count, different plugins etc. Thanks.
  
  
