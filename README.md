@@ -103,3 +103,8 @@ $ spart -l
  Also, there is no need to have administrative rights (being root) to compile and use. If you want to use the spart command as a regular user, you can compile and use at your home directory.
 
 
+## Help
+
+ If you want to help this project, I need to test the spart at different clusters and slurm versions. If you run spart at your cluster, and submit the output as an issue with brief slurm info; It will be great. The exact resources numbers, features and names of the resources are not important. You can change the all of them. I need to see the spart is working correctly with different configurations such as the federated cluster, huge node count, different plugins etc. Thanks.
+ 
+ 
