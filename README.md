@@ -94,11 +94,18 @@ $ spart -l
  If your slurm installed at default location, you can compile the spart command as below:
 
  ```gcc -lslurm -lslurmdb spart.c -o spart```
+ 
+ At SLURM 19.05, you should compile without **-libslurmdb**:
+ 
+ ```gcc -lslurm spart.c -o spart```
 
  If not, you should give locations of the headers and libraries:
 
  ```gcc -lslurm -lslurmdb spart.c -o spart -I/location/of/slurm/header/files/ -L/location/of/slurm/library/files/```
 
+ At SLURM 19.05, you should compile without **-libslurmdb**:
+ 
+ ```gcc -lslurm spart.c -o spart -I/location/of/slurm/header/files/ -L/location/of/slurm/library/files/```
  
  Also, there is no need to have administrative rights (being root) to compile and use. If you want to use the spart command as a regular user, you can compile and use at your home directory.
 
