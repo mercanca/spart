@@ -99,7 +99,7 @@ $ spart -l
  
  ```gcc -lslurm spart.c -o spart```
 
- If not, you should give locations of the headers and libraries:
+ If it is not installed at default location, you should give locations of the headers and libraries:
 
  ```gcc -lslurm -lslurmdb spart.c -o spart -I/location/of/slurm/header/files/ -L/location/of/slurm/library/files/```
 
