@@ -34,7 +34,8 @@
 	S	closed to the job submit, but the submitted jobs will run,
 	D	open to the job submit, but the submitted jobs will not run,
 	R	open for only root, or closed to root (if you are root),
-	A	closed to your account(s).
+	A	closed to your account(s),
+	G	closed to your group(s).
 ```
 
  The **RESOURCE PENDING** column shows core counts of pending jobs because of the busy resource.
@@ -99,13 +100,10 @@ $ spart -l
  
  ```gcc -lslurm spart.c -o spart```
 
- If it is not installed at default location, you should give locations of the headers and libraries:
+ If it is not installed at default location, you should add locations of the headers and libraries:
 
  ```gcc -lslurm -lslurmdb spart.c -o spart -I/location/of/slurm/header/files/ -L/location/of/slurm/library/files/```
 
- At SLURM 19.05, you should compile without **-libslurmdb**:
- 
- ```gcc -lslurm spart.c -o spart -I/location/of/slurm/header/files/ -L/location/of/slurm/library/files/```
  
  Also, there is no need to have administrative rights (being root) to compile and use. If you want to use the spart command as a regular user, you can compile and use at your home directory.
 
