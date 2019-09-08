@@ -39,6 +39,7 @@ int spart_usage() {
       "\t.\thidden partition,\n"
       "\tC\tclosed to both the job submit and run,\n"
       "\tS\tclosed to the job submit, but the submitted jobs will run,\n"
+      "\tr\trequires the reservation,\n"
       "\tD\topen to the job submit, but the submitted jobs will not run,\n"
       "\tR\topen for only root, or closed to root (if you are root),\n"
       "\tA\tclosed to your account(s).\n"
@@ -78,7 +79,7 @@ int spart_usage() {
 #ifdef SPART_COMPILE_FOR_UHEM
   printf("This is UHeM Version of the spart command.\n");
 #endif
-  printf("spart version 0.7\n\n");
+  printf("spart version 0.7.1\n\n");
   exit(1);
 }
 
@@ -847,10 +848,10 @@ int main(int argc, char *argv[]) {
 
     if (strncmp(user_name, "root", SPART_INFO_STRING_SIZE) == 0) {
       if (part_ptr->flags & PART_FLAG_NO_ROOT)
-        strncat(spData[i].partition_status, "N", SPART_MAX_COLUMN_SIZE);
+        strncat(spData[i].partition_status, "R", SPART_MAX_COLUMN_SIZE);
     } else {
       if (part_ptr->flags & PART_FLAG_ROOT_ONLY)
-        strncat(spData[i].partition_status, "N", SPART_MAX_COLUMN_SIZE);
+        strncat(spData[i].partition_status, "R", SPART_MAX_COLUMN_SIZE);
     }
 
     if (!(part_ptr->state_up & PARTITION_UP)) {
@@ -863,7 +864,7 @@ int main(int argc, char *argv[]) {
     }
 
     if (part_ptr->flags & PART_FLAG_REQ_RESV)
-      strncat(spData[i].partition_status, "R", SPART_MAX_COLUMN_SIZE);
+      strncat(spData[i].partition_status, "r", SPART_MAX_COLUMN_SIZE);
 
     /* spgre (GRES) data converting to string */
     if (sp_gres_count == 0) {

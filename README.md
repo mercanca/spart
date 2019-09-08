@@ -33,6 +33,7 @@
 	C	closed to both the job submit and run,
 	S	closed to the job submit, but the submitted jobs will run,
 	D	open to the job submit, but the submitted jobs will not run,
+	r	requires the reservation,
 	R	open for only root, or closed to root (if you are root),
 	A	closed to your account(s),
 	G	closed to your group(s).
