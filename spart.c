@@ -79,7 +79,7 @@ int spart_usage() {
 #ifdef SPART_COMPILE_FOR_UHEM
   printf("This is UHeM Version of the spart command.\n");
 #endif
-  printf("spart version 0.7.1\n\n");
+  printf("spart version 0.7.2\n\n");
   exit(1);
 }
 
@@ -531,6 +531,7 @@ int main(int argc, char *argv[]) {
 
   sp_headers_t spheaders;
 
+#if SLURM_VERSION_NUMBER > SLURM_VERSION_NUM(18, 7, 0)
   /* Get username */
   gid_t *groupIDs = NULL;
   struct passwd *pw;
@@ -560,6 +561,7 @@ int main(int argc, char *argv[]) {
   }
 
   free(groupIDs);
+#endif
 
   /* Set default column visibility */
   sp_headers_set_defaults(&spheaders);
@@ -935,6 +937,7 @@ int main(int argc, char *argv[]) {
     partition_print(&(spData[i]), &spheaders, show_max_mem);
   }
 
+#if SLURM_VERSION_NUMBER > SLURM_VERSION_NUM(18, 7, 0)
   /* free allocations */
   for (k = 0; k < user_acct_count; k++) {
     free(user_acct[k]);
@@ -944,6 +947,8 @@ int main(int argc, char *argv[]) {
   }
   free(user_acct);
   free(user_group);
+#endif
+
   free(spData);
   slurm_free_job_info_msg(job_buffer_ptr);
   slurm_free_node_info_msg(node_buffer_ptr);
