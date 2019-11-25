@@ -6,7 +6,7 @@
 
 ## Usage
 
- **Usage: spart [-m] [-a] [-c] [-g] [-l] [-h]**
+ **Usage: spart [-m] [-a] [-c] [-g] [-i] [-l] [-h]**
 
  This program shows **the user specific brief partition info** with core count of available nodes and pending jobs.
 
