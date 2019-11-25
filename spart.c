@@ -1,19 +1,19 @@
 /******************************************************************
-* spart    : a user-oriented partition info command for slurm
-* Author   : Cem Ahmet Mercan, 2019-02-16
-* Licence  : GNU General Public License v2.0
-* Note     : Some part of this code taken from slurm api man pages
-*******************************************************************/
+ * spart    : a user-oriented partition info command for slurm
+ * Author   : Cem Ahmet Mercan, 2019-02-16
+ * Licence  : GNU General Public License v2.0
+ * Note     : Some part of this code taken from slurm api man pages
+ *******************************************************************/
 
+#include <grp.h>
+#include <limits.h>
+#include <pwd.h>
+#include <slurm/slurm.h>
+#include <slurm/slurm_errno.h>
+#include <slurm/slurmdb.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <limits.h>
-#include <grp.h>
-#include <pwd.h>
-#include <slurm/slurm.h>
-#include <slurm/slurmdb.h>
-#include <slurm/slurm_errno.h>
 
 /* #define SPART_COMPILE_FOR_UHEM */
 
@@ -42,7 +42,7 @@ int spart_usage() {
       "\tr\trequires the reservation,\n"
       "\tD\topen to the job submit, but the submitted jobs will not run,\n"
       "\tR\topen for only root, or closed to root (if you are root),\n"
-      "\tA\tclosed to your account(s).\n"
+      "\tA\tclosed to your account(s),\n"
       "\tG\tclosed to your group(s).\n\n");
   printf(
       "The RESOURCE PENDING column shows core counts of pending jobs "
@@ -73,13 +73,15 @@ int spart_usage() {
       " defined in that partition\n\t\tand (in paranteses) the total number of "
       "nodes in that partition\n\t\tcontaining that GRES.\n\n");
   printf(
+      "\t-i\tThe groups and accounts info will be shown.\n\n");
+  printf(
       "\t-l\tall posible columns will be shown, except"
       " the federated clusters column.\n\n");
   printf("\t-h\tshows this usage text.\n\n");
 #ifdef SPART_COMPILE_FOR_UHEM
   printf("This is UHeM Version of the spart command.\n");
 #endif
-  printf("spart version 0.7.2\n\n");
+  printf("spart version 0.8.0\n\n");
   exit(1);
 }
 
@@ -126,7 +128,6 @@ void sp_gres_add(sp_gres_info_t spga[], uint16_t *sp_gres_count,
 
   for (grestok = strtok_r(node_gres, ",", &strtmp); grestok != NULL;
        grestok = strtok_r(NULL, ",", &strtmp)) {
-
     for (i = 0; i < *sp_gres_count; i++) {
       if (strncmp(spga[i].gres_name, grestok, SPART_INFO_STRING_SIZE) == 0) {
         spga[i].count++;
@@ -161,7 +162,6 @@ int sp_account_check(char **useracct, int useract_count, char *partition_acct) {
 
   for (grestok = strtok_r(partition_acct, ",", &strtmp); grestok != NULL;
        grestok = strtok_r(NULL, ",", &strtmp)) {
-
     for (i = 0; i < useract_count; i++) {
       if (strncmp(useracct[i], grestok, SPART_INFO_STRING_SIZE) == 0) {
         found = 1;
@@ -483,10 +483,10 @@ int main(int argc, char *argv[]) {
 
   int user_acct_count;
   char **user_acct = NULL;
+#endif
 
   int user_group_count = SPART_MAX_GROUP_SIZE;
   char **user_group = NULL;
-#endif
 
   uint32_t mem, cpus, min_mem, max_mem;
   uint32_t max_cpu, min_cpu, free_cpu, free_node;
@@ -531,7 +531,7 @@ int main(int argc, char *argv[]) {
 
   sp_headers_t spheaders;
 
-#if SLURM_VERSION_NUMBER > SLURM_VERSION_NUM(18, 7, 0)
+  int show_info = 0;
   /* Get username */
   gid_t *groupIDs = NULL;
   struct passwd *pw;
@@ -561,7 +561,6 @@ int main(int argc, char *argv[]) {
   }
 
   free(groupIDs);
-#endif
 
   /* Set default column visibility */
   sp_headers_set_defaults(&spheaders);
@@ -590,6 +589,11 @@ int main(int argc, char *argv[]) {
 
     if (strncmp(argv[k], "-g", 3) == 0) {
       spheaders.gres.visible = 1;
+      continue;
+    }
+
+    if (strncmp(argv[k], "-i", 3) == 0) {
+      show_info = 1;
       continue;
     }
 
@@ -664,10 +668,39 @@ int main(int argc, char *argv[]) {
 
   slurm_list_iterator_destroy(itr);
   slurm_list_destroy(assoc_list);
+#endif
+  
+  if (show_info) {
+    printf(" Your username: %s\n",user_name);
+    printf(" Your group(s): ");
+    for (k = 0; k < user_group_count; k++) {
+      printf("%s ",user_group[k]);
+    }
+    printf("\n");
+    printf(" Your account(s): ");
+#if SLURM_VERSION_NUMBER > SLURM_VERSION_NUM(18, 7, 0)
+    for (k = 0; k < user_acct_count; k++) {
+      printf("%s ",user_acct[k]);
+    }
+#else
+    /* run sacctmgr command to get associations from old slurm */
+    char sh_str[SPART_INFO_STRING_SIZE];
+    char re_str[SPART_INFO_STRING_SIZE];
+    FILE *fo;
+ 
+    snprintf(sh_str, SPART_INFO_STRING_SIZE, "sacctmgr list association format=account%%-30 where user=%s -n|tr -s '\n' ' '", user_name);
+    fo=popen(sh_str,"r");
+    if (fo) {
+      fgets(re_str, SPART_INFO_STRING_SIZE , fo);
+      printf("%s",re_str);
+    }
+    pclose(fo);
+#endif
+    printf("\n\n");
+  }
 
 /* if (db_conn != NULL)
   slurmdb_connection_close(db_conn); */
-#endif
 
   /* Initialize spart data for each partition */
   partition_count = part_buffer_ptr->record_count;
@@ -708,7 +741,6 @@ int main(int argc, char *argv[]) {
     strncat(job_parts_str, ",", SPART_INFO_STRING_SIZE);
 
     for (j = 0; j < partition_count; j++) {
-
       /* add ',' character at the begining and the end */
       strncpy(partition_str, ",", SPART_INFO_STRING_SIZE);
       strncat(partition_str, part_buffer_ptr->partition_array[j].name,
@@ -768,16 +800,15 @@ int main(int argc, char *argv[]) {
 #endif
 
         /* The PowerSave_PwrOffState and PwrON_State_PowerSave control
-        * for an alternative power saving solution we developed.
-        * It required for showing power-off nodes as idle */
+         * for an alternative power saving solution we developed.
+         * It required for showing power-off nodes as idle */
         if ((((state & NODE_STATE_DRAIN) != NODE_STATE_DRAIN) &&
              ((state == NODE_STATE_DOWN) != NODE_STATE_DOWN))
 #ifdef SPART_COMPILE_FOR_UHEM
-            ||
-            (strncmp(reason, "PowerSave_PwrOffState", 21) == 0) ||
+            || (strncmp(reason, "PowerSave_PwrOffState", 21) == 0) ||
             (strncmp(reason, "PwrON_State_PowerSave", 21) == 0)
 #endif
-            ) {
+        ) {
           if (alloc_cpus == 0) free_node += 1;
           free_cpu += cpus - alloc_cpus;
         }
@@ -821,7 +852,7 @@ int main(int argc, char *argv[]) {
 #endif
 
     /* Partition States from more important to less important
-    *  because, there is limited space. */
+     *  because, there is limited space. */
     if (part_ptr->flags & PART_FLAG_DEFAULT)
       strncat(spData[i].partition_status, "*", SPART_MAX_COLUMN_SIZE);
     if (part_ptr->flags & PART_FLAG_HIDDEN)
@@ -942,12 +973,12 @@ int main(int argc, char *argv[]) {
   for (k = 0; k < user_acct_count; k++) {
     free(user_acct[k]);
   }
+  free(user_acct);
+#endif
   for (k = 0; k < user_group_count; k++) {
     free(user_group[k]);
   }
-  free(user_acct);
   free(user_group);
-#endif
 
   free(spData);
   slurm_free_job_info_msg(job_buffer_ptr);

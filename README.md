@@ -64,6 +64,8 @@
 		and (in paranteses) the total number of nodes in that partition
 		containing that GRES.
 
+ **-i** the groups and accounts info will be shown.
+
  **-l**	all posible columns will be shown, except the federated clusters column.
 
  **-h**	shows this usage text.
