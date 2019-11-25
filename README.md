@@ -23,7 +23,6 @@
    bigmemq         28    280      1     10      0      0      1      -    7-00:00     28    512
      b224q       1064   2548     38     91      0      0      8     40    1-00:00     28    128
    core40q         40   1400      1     35   1456      0      1      -    7-00:00     40    192
-       all  .A   1152   4340     41    142      0      0      1      -     -          24     64
 ```
 
  In the **STA-TUS** column, the characters means, the partition is:
