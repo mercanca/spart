@@ -84,6 +84,22 @@ $ spart -l
        all  .A   1152   4340     41    142      0      0      1      -     -         24-40     64-512 gpu:1(4)
 ```
 
+```
+$ spart -i
+ Your username: marfea
+ Your group(s): eoss1 d0001
+ Your account(s): d0001 eoss1
+
+     QUEUE STA   FREE  TOTAL   FREE  TOTAL RESORC  OTHER    MIN    MAX MAXJOBTIME  CORES   NODE
+ PARTITION TUS  CORES  CORES  NODES  NODES PENDNG PENDNG  NODES  NODES  DAY-HR:MN  /NODE MEM-GB
+      defq   *    868   2436     31     87   1024      0      1      -    7-00:00     28    126
+    shortq        924   2604     33     93      0      0      1      2    0-01:00     28    126
+     longq        264    336     11     14      0      0      1      -   21-00:00     24     62
+      gpuq         56    112      2      4      0      0      1      -    7-00:00     28    126
+   bigmemq         56    280      2     10      0      0      1      -    7-00:00     28    510
+     b224q        896   2548     32     91      0      0      8     40    1-00:00     28    126
+   core40q         40   1400      1     35    444      0      1      -    7-00:00     40    190
+```
 
 ## Requirements
 
