@@ -72,8 +72,7 @@ int spart_usage() {
       "\t-g\tthe ouput shows each GRES (gpu, mic etc.)"
       " defined in that partition\n\t\tand (in paranteses) the total number of "
       "nodes in that partition\n\t\tcontaining that GRES.\n\n");
-  printf(
-      "\t-i\tThe groups and accounts info will be shown.\n\n");
+  printf("\t-i\tThe groups and accounts info will be shown.\n\n");
   printf(
       "\t-l\tall posible columns will be shown, except"
       " the federated clusters column.\n\n");
@@ -81,7 +80,7 @@ int spart_usage() {
 #ifdef SPART_COMPILE_FOR_UHEM
   printf("This is UHeM Version of the spart command.\n");
 #endif
-  printf("spart version 0.8.0\n\n");
+  printf("spart version 0.8.1\n\n");
   exit(1);
 }
 
@@ -344,35 +343,41 @@ void sp_headers_print(sp_headers_t *sph) {
 }
 
 /* Condensed printing for big numbers (k,m) */
-void con_print(uint32_t num) {
+void con_print(uint32_t num, uint16_t column_width) {
   char cresult[SPART_MAX_COLUMN_SIZE];
+  uint16_t clong, cres;
   snprintf(cresult, SPART_MAX_COLUMN_SIZE, "%d", num);
-  switch (strlen(cresult)) {
+  clong = strlen(cresult);
+  if (clong > column_width)
+    cres = clong - column_width;
+  else
+    cres = 0;
+  switch (cres) {
+    case 1:
+    case 2:
+      printf("%*d%s ", column_width - 1, (uint32_t)(num / 1000), "k");
+      break;
+
+    case 3:
+      printf("%*.1f%s ", column_width - 1, (float)(num / 1000000.0f), "m");
+      break;
+
+    case 4:
     case 5:
+      printf("%*d%s ", column_width - 1, (uint32_t)(num / 1000000), "m");
+      break;
+
     case 6:
-      printf("%5d%s ", (uint32_t)(num / 1000), "k");
+      printf("%*.1f%s ", column_width - 1, (float)(num / 1000000000.0f), "g");
       break;
 
     case 7:
-      printf("%5.1f%s ", (float)(num / 1000000.0f), "m");
-      break;
-
     case 8:
-    case 9:
-      printf("%5d%s ", (uint32_t)(num / 1000000), "m");
-      break;
-
-    case 10:
-      printf("%5.1f%s ", (float)(num / 1000000000.0f), "g");
-      break;
-
-    case 11:
-    case 12:
-      printf("%5d%s ", (uint32_t)(num / 1000000000), "g");
+      printf("%*d%s ", column_width - 1, (uint32_t)(num / 1000000000), "g");
       break;
 
     default:
-      printf("%6d ", num);
+      printf("%*d ", column_width, num);
   }
 }
 
@@ -421,18 +426,25 @@ void partition_print(spart_info_t *sp, sp_headers_t *sph, int show_max_mem) {
     printf("%*s ", sph->partition_name.column_width, sp->partition_name);
   if (sph->partition_status.visible)
     printf("%*s ", sph->partition_status.column_width, sp->partition_status);
-  if (sph->free_cpu.visible) con_print(sp->free_cpu);
-  if (sph->total_cpu.visible) con_print(sp->total_cpu);
-  if (sph->free_node.visible) con_print(sp->free_node);
-  if (sph->total_cpu.visible) con_print(sp->total_node);
-  if (sph->waiting_resource.visible) con_print(sp->waiting_resource);
-  if (sph->waiting_other.visible) con_print(sp->waiting_other);
-  if (sph->min_nodes.visible) con_print(sp->min_nodes);
+  if (sph->free_cpu.visible)
+    con_print(sp->free_cpu, sph->free_cpu.column_width);
+  if (sph->total_cpu.visible)
+    con_print(sp->total_cpu, sph->total_cpu.column_width);
+  if (sph->free_node.visible)
+    con_print(sp->free_node, sph->free_node.column_width);
+  if (sph->total_cpu.visible)
+    con_print(sp->total_node, sph->total_cpu.column_width);
+  if (sph->waiting_resource.visible)
+    con_print(sp->waiting_resource, sph->waiting_resource.column_width);
+  if (sph->waiting_other.visible)
+    con_print(sp->waiting_other, sph->waiting_other.column_width);
+  if (sph->min_nodes.visible)
+    con_print(sp->min_nodes, sph->min_nodes.column_width);
   if (sph->max_nodes.visible) {
     if (sp->max_nodes == UINT_MAX)
       printf("     - ");
     else
-      con_print(sp->max_nodes);
+      con_print(sp->max_nodes, sph->max_nodes.column_width);
   }
   if (sph->mjt_time.visible) {
     if (sp->mjt_time == INFINITE)
@@ -642,6 +654,13 @@ int main(int argc, char *argv[]) {
   strncpy(cluster_name, conf_info_msg_ptr->cluster_name, SPART_MAX_COLUMN_SIZE);
 #endif
 
+  /* to check that can we read pending jobs info */
+  if (conf_info_msg_ptr->private_data & PRIVATE_DATA_JOBS) {
+    printf(
+        "WARNING: Because of the restriction of the other users' jobs info,\n  "
+        "       spart can not show other users' waiting jobs info!\n\n");
+  }
+
 #if SLURM_VERSION_NUMBER > SLURM_VERSION_NUM(18, 7, 0)
   /* Getting user account info */
   db_conn = slurmdb_connection_get();
@@ -669,38 +688,53 @@ int main(int argc, char *argv[]) {
   slurm_list_iterator_destroy(itr);
   slurm_list_destroy(assoc_list);
 #endif
-  
+
+  char sh_str[SPART_INFO_STRING_SIZE];
+  char re_str[SPART_INFO_STRING_SIZE];
+  FILE *fo;
+
   if (show_info) {
-    printf(" Your username: %s\n",user_name);
+    printf(" Your username: %s\n", user_name);
     printf(" Your group(s): ");
     for (k = 0; k < user_group_count; k++) {
-      printf("%s ",user_group[k]);
+      printf("%s ", user_group[k]);
     }
     printf("\n");
     printf(" Your account(s): ");
 #if SLURM_VERSION_NUMBER > SLURM_VERSION_NUM(18, 7, 0)
     for (k = 0; k < user_acct_count; k++) {
-      printf("%s ",user_acct[k]);
+      printf("%s ", user_acct[k]);
     }
 #else
     /* run sacctmgr command to get associations from old slurm */
-    char sh_str[SPART_INFO_STRING_SIZE];
-    char re_str[SPART_INFO_STRING_SIZE];
-    FILE *fo;
- 
-    snprintf(sh_str, SPART_INFO_STRING_SIZE, "sacctmgr list association format=account%%-30 where user=%s -n|tr -s '\n' ' '", user_name);
-    fo=popen(sh_str,"r");
+    snprintf(sh_str, SPART_INFO_STRING_SIZE,
+             "sacctmgr list association format=account%%-30 where user=%s "
+             "-n|tr -s '\n' ' '",
+             user_name);
+    fo = popen(sh_str, "r");
     if (fo) {
-      fgets(re_str, SPART_INFO_STRING_SIZE , fo);
-      printf("%s",re_str);
+      fgets(re_str, SPART_INFO_STRING_SIZE, fo);
+      printf("%s", re_str);
     }
     pclose(fo);
+
 #endif
+    printf("\n Your qos(s): ");
+    snprintf(sh_str, SPART_INFO_STRING_SIZE,
+             "sacctmgr list association format=qos%%-30 where user=%s -n|tr -s "
+             "'\n' ' '",
+             user_name);
+    fo = popen(sh_str, "r");
+    if (fo) {
+      fgets(re_str, SPART_INFO_STRING_SIZE, fo);
+      printf("%s", re_str);
+    }
+    pclose(fo);
     printf("\n\n");
   }
 
-/* if (db_conn != NULL)
-  slurmdb_connection_close(db_conn); */
+  /* if (db_conn != NULL)
+    slurmdb_connection_close(db_conn); */
 
   /* Initialize spart data for each partition */
   partition_count = part_buffer_ptr->record_count;
@@ -803,12 +837,14 @@ int main(int argc, char *argv[]) {
          * for an alternative power saving solution we developed.
          * It required for showing power-off nodes as idle */
         if ((((state & NODE_STATE_DRAIN) != NODE_STATE_DRAIN) &&
-             ((state == NODE_STATE_DOWN) != NODE_STATE_DOWN))
+             ((state & NODE_STATE_BASE) != NODE_STATE_DOWN) &&
+             (state != NODE_STATE_UNKNOWN))
 #ifdef SPART_COMPILE_FOR_UHEM
-            || (strncmp(reason, "PowerSave_PwrOffState", 21) == 0) ||
+            ||
+            (strncmp(reason, "PowerSave_PwrOffState", 21) == 0) ||
             (strncmp(reason, "PwrON_State_PowerSave", 21) == 0)
 #endif
-        ) {
+            ) {
           if (alloc_cpus == 0) free_node += 1;
           free_cpu += cpus - alloc_cpus;
         }

@@ -88,6 +88,7 @@ $ spart -i
  Your username: marfea
  Your group(s): eoss1 d0001
  Your account(s): d0001 eoss1
+ Your qos(s): normal
 
      QUEUE STA   FREE  TOTAL   FREE  TOTAL RESORC  OTHER    MIN    MAX MAXJOBTIME  CORES   NODE
  PARTITION TUS  CORES  CORES  NODES  NODES PENDNG PENDNG  NODES  NODES  DAY-HR:MN  /NODE MEM-GB
