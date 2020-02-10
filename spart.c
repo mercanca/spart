@@ -15,7 +15,56 @@
 #include <stdlib.h>
 #include <string.h>
 
+/* for UHeM spesific settings */
 /* #define SPART_COMPILE_FOR_UHEM */
+
+/* #define SPART_SHOW_STATEMENT */
+
+/* if you want to use STATEMENT feature, uncomment
+ * SPART_SHOW_STATEMENT at upper line, and set
+ * SPART_STATEMENT_DIR to show the correct directory
+ * which will be saved all statement files.
+ * Write your statement into statement file which
+ * SPART_STATEMENT_DIR/SPART_STATEMENT_FILE
+ * as a regular text, but max 91 chars per line.
+ * SPART_STATEMENT_DIR and SPART_STATEMENT_FILE
+ * should be readable by everyone.
+ * You can change or remove STATEMENT file without
+ * recompiling the spart. If the spart find a
+ * statement file, it will show your statement. */
+#ifdef SPART_SHOW_STATEMENT
+
+#define SPART_STATEMENT_DIR "/okyanus/SLURM/spart/"
+#define SPART_STATEMENT_FILE "spart_STATEMENT.txt"
+
+/* if you want to show a bold STATEMENT, define like these
+ * #define SPART_STATEMENT_LINEPRE "\033[1m"
+ * #define SPART_STATEMENT_LINEPOST "\033[0m"
+ */
+/* for the white text over the red background
+ * #define SPART_STATEMENT_LINEPRE "\033[37;41;1m"
+ * #define SPART_STATEMENT_LINEPOST "\033[0m"
+ */
+/* and, for regular statement text, use these
+#define SPART_STATEMENT_LINEPRE ""
+#define SPART_STATEMENT_LINEPOST ""
+*/
+#define SPART_STATEMENT_LINEPRE ""
+#define SPART_STATEMENT_LINEPOST ""
+
+/* Same as SPART_STATEMENT_LINEPRE,
+ * but these for QUEUE STATEMENTs */
+#define SPART_STATEMENT_QUEUE_LINEPRE ""
+#define SPART_STATEMENT_QUEUE_LINEPOST ""
+
+/* The partition statements will be located at
+ * SPART_STATEMENT_DIR/
+ * SPART_STATEMENT_QUEPRE<partition>SPART_STATEMENT_QUEPOST
+ * and will be shown, if -i parameter is given.
+ */
+#define SPART_STATEMENT_QUEPRE "spart_partition_"
+#define SPART_STATEMENT_QUEPOST ".txt"
+#endif
 
 #define SPART_INFO_STRING_SIZE 256
 #define SPART_GRES_ARRAY_SIZE 64
@@ -29,7 +78,7 @@ int spart_usage() {
 #ifdef __slurmdb_cluster_rec_t_defined
       "[-c] "
 #endif
-      "[-g] [-l] [-h]\n\n");
+      "[-g] [-i] [-l] [-h]\n\n");
   printf(
       "This program shows brief partition info with core count of available "
       "nodes and pending jobs.\n\n");
@@ -42,8 +91,12 @@ int spart_usage() {
       "\tr\trequires the reservation,\n"
       "\tD\topen to the job submit, but the submitted jobs will not run,\n"
       "\tR\topen for only root, or closed to root (if you are root),\n"
-      "\tA\tclosed to your account(s),\n"
-      "\tG\tclosed to your group(s).\n\n");
+      "\tA\tclosed to all of your account(s),\n"
+      "\ta\tclosed to some of your account(s),\n"
+      "\tG\tclosed to all of your group(s),\n"
+      "\tg\tclosed to some of your group(s),\n"
+      "\tQ\tclosed to all of your QOS(s),\n"
+      "\tq\tclosed to some of your QOS(s).\n\n");
   printf(
       "The RESOURCE PENDING column shows core counts of pending jobs "
       "because of the busy resource.\n\n");
@@ -51,15 +104,18 @@ int spart_usage() {
       "The OTHER PENDING column shows core counts of pending jobs because "
       "of the other reasons such\n as license or other limits.\n\n");
   printf(
-      "If MIN NODES, MAX NODES, and MAXJOBTIME limits are not setted for the "
-      "all partitions in your\n cluster, corresponding column(s) will not be "
-      "shown.\n\n");
+      "If the partition's QOS NAME, MIN NODES, MAX NODES, and MAXJOBTIME "
+      "limits are not setted for\n the all partitions in your cluster, "
+       "corresponding column(s) will not be shown, except -l\n parameter "
+       "was given.\n\n");
   printf(
       "The CORES PERNODE column shows the core count of the node with "
-      "lowest core count in the partition.\n\n");
+      "lowest core count in the\n partition. But if -l was given, both "
+      "the lowest and highest core counts will be shown.\n\n");
   printf(
       "The NODE MEM-GB column shows the memory of the lowest memory node "
-      "in this partition.\n\n");
+      "in this partition. But if\n -l parameter was given, both the lowest "
+      "and highest memory will be shown.\n\n");
   printf("Parameters:\n\n");
   printf(
       "\t-m\tboth the lowest and highest values will be shown in the CORES"
@@ -72,7 +128,9 @@ int spart_usage() {
       "\t-g\tthe ouput shows each GRES (gpu, mic etc.)"
       " defined in that partition\n\t\tand (in paranteses) the total number of "
       "nodes in that partition\n\t\tcontaining that GRES.\n\n");
-  printf("\t-i\tThe groups and accounts info will be shown.\n\n");
+  printf(
+      "\t-i\tthe info about the groups, accounts, QOSs, and queues will "
+      "be shown.\n\n");
   printf(
       "\t-l\tall posible columns will be shown, except"
       " the federated clusters column.\n\n");
@@ -80,7 +138,7 @@ int spart_usage() {
 #ifdef SPART_COMPILE_FOR_UHEM
   printf("This is UHeM Version of the spart command.\n");
 #endif
-  printf("spart version 0.8.1\n\n");
+  printf("spart version 0.9.0\n\n");
   exit(1);
 }
 
@@ -99,14 +157,19 @@ typedef struct spart_info {
   uint16_t mjt_day;
   uint16_t mjt_hour;
   uint16_t mjt_minute;
+#ifdef SPART_SHOW_STATEMENT
+  uint16_t show_statement;
+#endif
   uint32_t min_core;
   uint32_t max_core;
   uint16_t min_mem_gb;
   uint16_t max_mem_gb;
+  uint16_t visible;
   char partition_name[SPART_MAX_COLUMN_SIZE];
 #ifdef __slurmdb_cluster_rec_t_defined
   char cluster_name[SPART_MAX_COLUMN_SIZE];
 #endif
+  char partition_qos[SPART_MAX_COLUMN_SIZE];
   char gres[SPART_INFO_STRING_SIZE];
   char partition_status[SPART_MAX_COLUMN_SIZE];
 } spart_info_t;
@@ -155,20 +218,28 @@ void sp_gres_reset_counts(sp_gres_info_t *spga, uint16_t *sp_gres_count) {
 /* Checks the user accounts present at the partition accounts */
 int sp_account_check(char **useracct, int useract_count, char *partition_acct) {
   uint16_t i;
-  int found = 0;
+  int *found = NULL;
+  int parti = 0;
   char *strtmp = NULL;
   char *grestok;
+
+  found = malloc(useract_count * sizeof(int));
+  for (i = 0; i < useract_count; i++) found[i] = 0;
 
   for (grestok = strtok_r(partition_acct, ",", &strtmp); grestok != NULL;
        grestok = strtok_r(NULL, ",", &strtmp)) {
     for (i = 0; i < useract_count; i++) {
       if (strncmp(useracct[i], grestok, SPART_INFO_STRING_SIZE) == 0) {
-        found = 1;
+        found[i]++;
         break;
       }
     }
   }
-  return found;
+  /* How many accounts/groups of user listed in the partition list */
+  for (i = 0; i < useract_count; i++)
+    if (found[i] > 0) parti++;
+  free(found);
+  return parti;
 }
 
 /* An output column header info */
@@ -198,6 +269,7 @@ typedef struct sp_headers {
   sp_column_header_t mjt_time;
   sp_column_header_t min_core;
   sp_column_header_t min_mem_gb;
+  sp_column_header_t partition_qos;
   sp_column_header_t gres;
 } sp_headers_t;
 
@@ -267,6 +339,10 @@ void sp_headers_set_defaults(sp_headers_t *sph) {
   sph->min_mem_gb.column_width = 6;
   strncpy(sph->min_mem_gb.line1, "  NODE", sph->min_mem_gb.column_width);
   strncpy(sph->min_mem_gb.line2, "MEM-GB", sph->min_mem_gb.column_width);
+  sph->partition_qos.visible = 1;
+  sph->partition_qos.column_width = 6;
+  strncpy(sph->partition_qos.line1, "   QOS", sph->partition_qos.column_width);
+  strncpy(sph->partition_qos.line2, "  NAME", sph->partition_qos.column_width);
   sph->gres.visible = 0;
   sph->gres.column_width = 8;
   strncpy(sph->gres.line1, "  GRES  ", sph->gres.column_width);
@@ -293,6 +369,7 @@ void sp_headers_set_parameter_L(sp_headers_t *sph) {
   sph->mjt_time.visible = 1;
   sph->min_core.visible = 1;
   sph->min_mem_gb.visible = 1;
+  sph->partition_qos.visible = 1;
   sph->gres.visible = 1;
   sph->min_core.column_width = 8;
   sph->min_mem_gb.column_width = 10;
@@ -338,6 +415,7 @@ void sp_headers_print(sp_headers_t *sph) {
   sp_column_header_print(line1, line2, &(sph->mjt_time));
   sp_column_header_print(line1, line2, &(sph->min_core));
   sp_column_header_print(line1, line2, &(sph->min_mem_gb));
+  sp_column_header_print(line1, line2, &(sph->partition_qos));
   sp_column_header_print(line1, line2, &(sph->gres));
   printf("%s\n%s\n", line1, line2);
 }
@@ -414,64 +492,110 @@ void con_strprint(char *str, uint16_t size, uint32_t num) {
   }
 }
 
+#ifdef SPART_SHOW_STATEMENT
+void statement_print(const char *stfile, const char *stpartition) {
+
+  char re_str[SPART_INFO_STRING_SIZE];
+  FILE *fo;
+  int m, k;
+  fo = fopen(stfile, "r");
+  if (fo) {
+    printf("\n");
+    while (fgets(re_str, SPART_INFO_STRING_SIZE, fo)) {
+      /* To correctly frame some wide chars, but not all */
+      m = 0;
+      for (k = 0; (re_str[k] != '\0') && k < SPART_INFO_STRING_SIZE; k++) {
+        /*printf("%d:::%d:::%c\n",k,re_str[k],re_str[k]);*/
+        if ((re_str[k] < -58) && (re_str[k] > -62)) m++;
+        if (re_str[k] == '\n') re_str[k] = '\0';
+      }
+      printf("  %s %-*s %s\n", SPART_STATEMENT_QUEUE_LINEPRE, 92 + m, re_str,
+             SPART_STATEMENT_QUEUE_LINEPOST);
+    }
+    printf("  %s %-91s %s\n\n", SPART_STATEMENT_QUEUE_LINEPRE,
+           "------------------------------------------------------------------"
+           "--------------------------",
+           SPART_STATEMENT_QUEUE_LINEPOST);
+    /*printf("\n");*/
+    pclose(fo);
+  } else
+    printf("  %s %-91s %s\n", SPART_STATEMENT_QUEUE_LINEPRE,
+           "------------------------------------------------------------------"
+           "--------------------------",
+           SPART_STATEMENT_QUEUE_LINEPOST);
+}
+#endif
+
 /* Prints a partition info */
 void partition_print(spart_info_t *sp, sp_headers_t *sph, int show_max_mem) {
   char mem_result[SPART_INFO_STRING_SIZE];
-
+  if (sp->visible) {
 #ifdef __slurmdb_cluster_rec_t_defined
-  if (sph->cluster_name.visible)
-    printf("%*s ", sph->cluster_name.column_width, sp->cluster_name);
+    if (sph->cluster_name.visible)
+      printf("%*s ", sph->cluster_name.column_width, sp->cluster_name);
 #endif
-  if (sph->partition_name.visible)
-    printf("%*s ", sph->partition_name.column_width, sp->partition_name);
-  if (sph->partition_status.visible)
-    printf("%*s ", sph->partition_status.column_width, sp->partition_status);
-  if (sph->free_cpu.visible)
-    con_print(sp->free_cpu, sph->free_cpu.column_width);
-  if (sph->total_cpu.visible)
-    con_print(sp->total_cpu, sph->total_cpu.column_width);
-  if (sph->free_node.visible)
-    con_print(sp->free_node, sph->free_node.column_width);
-  if (sph->total_cpu.visible)
-    con_print(sp->total_node, sph->total_cpu.column_width);
-  if (sph->waiting_resource.visible)
-    con_print(sp->waiting_resource, sph->waiting_resource.column_width);
-  if (sph->waiting_other.visible)
-    con_print(sp->waiting_other, sph->waiting_other.column_width);
-  if (sph->min_nodes.visible)
-    con_print(sp->min_nodes, sph->min_nodes.column_width);
-  if (sph->max_nodes.visible) {
-    if (sp->max_nodes == UINT_MAX)
-      printf("     - ");
-    else
-      con_print(sp->max_nodes, sph->max_nodes.column_width);
+    if (sph->partition_name.visible)
+      printf("%*s ", sph->partition_name.column_width, sp->partition_name);
+    if (sph->partition_status.visible)
+      printf("%*s ", sph->partition_status.column_width, sp->partition_status);
+    if (sph->free_cpu.visible)
+      con_print(sp->free_cpu, sph->free_cpu.column_width);
+    if (sph->total_cpu.visible)
+      con_print(sp->total_cpu, sph->total_cpu.column_width);
+    if (sph->free_node.visible)
+      con_print(sp->free_node, sph->free_node.column_width);
+    if (sph->total_cpu.visible)
+      con_print(sp->total_node, sph->total_cpu.column_width);
+    if (sph->waiting_resource.visible)
+      con_print(sp->waiting_resource, sph->waiting_resource.column_width);
+    if (sph->waiting_other.visible)
+      con_print(sp->waiting_other, sph->waiting_other.column_width);
+    if (sph->min_nodes.visible)
+      con_print(sp->min_nodes, sph->min_nodes.column_width);
+    if (sph->max_nodes.visible) {
+      if (sp->max_nodes == UINT_MAX)
+        printf("     - ");
+      else
+        con_print(sp->max_nodes, sph->max_nodes.column_width);
+    }
+    if (sph->mjt_time.visible) {
+      if (sp->mjt_time == INFINITE)
+        printf("    -     ");
+      else
+        printf("%4d-%02d:%02d", sp->mjt_day, sp->mjt_hour, sp->mjt_minute);
+    }
+    if (sph->min_core.visible) {
+      if ((show_max_mem == 1) && (sp->min_core != sp->max_core))
+        snprintf(mem_result, SPART_INFO_STRING_SIZE, "%d-%d", sp->min_core,
+                 sp->max_core);
+      else
+        snprintf(mem_result, SPART_INFO_STRING_SIZE, "%*d",
+                 sph->min_core.column_width, sp->min_core);
+      printf(" %*s", sph->min_core.column_width, mem_result);
+    }
+    if (sph->min_mem_gb.visible) {
+      if ((show_max_mem == 1) && (sp->min_mem_gb != sp->max_mem_gb))
+        snprintf(mem_result, SPART_INFO_STRING_SIZE, "%d-%d", sp->min_mem_gb,
+                 sp->max_mem_gb);
+      else
+        snprintf(mem_result, SPART_INFO_STRING_SIZE, "%*d",
+                 sph->min_mem_gb.column_width, sp->min_mem_gb);
+      printf(" %*s", sph->min_mem_gb.column_width, mem_result);
+    }
+    if (sph->partition_qos.visible)
+      printf(" %*s ", sph->partition_qos.column_width, sp->partition_qos);
+
+    if (sph->gres.visible) printf(" %s", sp->gres);
+    printf("\n");
+#ifdef SPART_SHOW_STATEMENT
+    if (sp->show_statement) {
+      snprintf(mem_result, SPART_INFO_STRING_SIZE, "%s%s%s%s",
+               SPART_STATEMENT_DIR, SPART_STATEMENT_QUEPRE, sp->partition_name,
+               SPART_STATEMENT_QUEPOST);
+      statement_print(mem_result, sp->partition_name);
+    }
+#endif
   }
-  if (sph->mjt_time.visible) {
-    if (sp->mjt_time == INFINITE)
-      printf("    -     ");
-    else
-      printf("%4d-%02d:%02d", sp->mjt_day, sp->mjt_hour, sp->mjt_minute);
-  }
-  if (sph->min_core.visible) {
-    if ((show_max_mem == 1) && (sp->min_core != sp->max_core))
-      snprintf(mem_result, SPART_INFO_STRING_SIZE, "%d-%d", sp->min_core,
-               sp->max_core);
-    else
-      snprintf(mem_result, SPART_INFO_STRING_SIZE, "%*d",
-               sph->min_core.column_width, sp->min_core);
-    printf(" %*s", sph->min_core.column_width, mem_result);
-  }
-  if (sph->min_mem_gb.visible) {
-    if ((show_max_mem == 1) && (sp->min_mem_gb != sp->max_mem_gb))
-      snprintf(mem_result, SPART_INFO_STRING_SIZE, "%d-%d", sp->min_mem_gb,
-               sp->max_mem_gb);
-    else
-      snprintf(mem_result, SPART_INFO_STRING_SIZE, "%*d",
-               sph->min_mem_gb.column_width, sp->min_mem_gb);
-    printf(" %*s", sph->min_mem_gb.column_width, mem_result);
-  }
-  if (sph->gres.visible) printf(" %s", sp->gres);
-  printf("\n");
 }
 
 /* ========== MAIN ========== */
@@ -493,9 +617,12 @@ int main(int argc, char *argv[]) {
   ListIterator itr = NULL;
   slurmdb_assoc_rec_t *assoc;
 
-  int user_acct_count;
+  int user_acct_count = 0;
   char **user_acct = NULL;
 #endif
+
+  int user_qos_count = 0;
+  char **user_qos = NULL;
 
   int user_group_count = SPART_MAX_GROUP_SIZE;
   char **user_group = NULL;
@@ -505,6 +632,7 @@ int main(int argc, char *argv[]) {
   /* These values are default/unsetted values */
   uint32_t default_min_nodes = 0, default_max_nodes = UINT_MAX;
   uint32_t default_mjt_time = INFINITE;
+  char *default_qos = "normal";
 
   uint16_t alloc_cpus = 0;
   char mem_result[SPART_INFO_STRING_SIZE];
@@ -522,11 +650,14 @@ int main(int argc, char *argv[]) {
   uint16_t tmp_lenght = 0;
   int show_max_mem = 0;
   uint16_t show_partition = 0;
+  uint16_t show_qos = 0;
   uint16_t show_min_nodes = 0;
   uint16_t show_max_nodes = 0;
   uint16_t show_mjt_time = 0;
   int show_parameter_L = 0;
   int show_gres = 0;
+  int show_all_partition = 0;
+
   uint16_t partname_lenght = 0;
 #ifdef __slurmdb_cluster_rec_t_defined
   uint16_t clusname_lenght = 0;
@@ -587,6 +718,7 @@ int main(int argc, char *argv[]) {
 
     if (strncmp(argv[k], "-a", 3) == 0) {
       show_partition |= SHOW_ALL;
+      show_all_partition = 1;
       continue;
     }
 
@@ -621,7 +753,9 @@ int main(int argc, char *argv[]) {
       show_min_nodes = 1;
       show_max_nodes = 1;
       show_mjt_time = 1;
+      show_qos = 1;
       show_parameter_L = 1;
+      show_all_partition = 1;
       continue;
     }
 
@@ -692,6 +826,8 @@ int main(int argc, char *argv[]) {
   char sh_str[SPART_INFO_STRING_SIZE];
   char re_str[SPART_INFO_STRING_SIZE];
   FILE *fo;
+  char *p_str = NULL;
+  char *t_str = NULL;
 
   if (show_info) {
     printf(" Your username: %s\n", user_name);
@@ -709,7 +845,7 @@ int main(int argc, char *argv[]) {
     /* run sacctmgr command to get associations from old slurm */
     snprintf(sh_str, SPART_INFO_STRING_SIZE,
              "sacctmgr list association format=account%%-30 where user=%s "
-             "-n|tr -s '\n' ' '",
+             "-n 2>/dev/null|tr -s '\n' ' '",
              user_name);
     fo = popen(sh_str, "r");
     if (fo) {
@@ -720,18 +856,33 @@ int main(int argc, char *argv[]) {
 
 #endif
     printf("\n Your qos(s): ");
-    snprintf(sh_str, SPART_INFO_STRING_SIZE,
-             "sacctmgr list association format=qos%%-30 where user=%s -n|tr -s "
-             "'\n' ' '",
-             user_name);
-    fo = popen(sh_str, "r");
-    if (fo) {
-      fgets(re_str, SPART_INFO_STRING_SIZE, fo);
-      printf("%s", re_str);
-    }
-    pclose(fo);
-    printf("\n\n");
   }
+  snprintf(sh_str, SPART_INFO_STRING_SIZE,
+           "sacctmgr list association format=qos%%-30 where user=%s -n "
+           "2>/dev/null |tr -s '\n,' ' '",
+           user_name);
+  fo = popen(sh_str, "r");
+  if (fo) {
+    fgets(re_str, SPART_INFO_STRING_SIZE, fo);
+    if (show_info) printf("%s", re_str);
+    if (show_info) printf("\n\n");
+    if (re_str[0] == '\0')
+      user_qos_count = 1;
+    else
+      user_qos_count = 0;
+    k = 0;
+    for (j = 0; re_str[j]; j++)
+      if (re_str[j] == ' ') user_qos_count++;
+
+    user_qos = malloc(user_qos_count * sizeof(char *));
+    for (p_str = strtok_r(re_str, ",", &t_str); p_str != NULL;
+         p_str = strtok_r(NULL, ",", &t_str)) {
+      user_qos[k] = malloc(SPART_INFO_STRING_SIZE * sizeof(char));
+      strncpy(user_qos[k], p_str, SPART_INFO_STRING_SIZE);
+      k++;
+    }
+  }
+  pclose(fo);
 
   /* if (db_conn != NULL)
     slurmdb_connection_close(db_conn); */
@@ -754,15 +905,20 @@ int main(int argc, char *argv[]) {
     spData[i].mjt_day = 0;
     spData[i].mjt_hour = 0;
     spData[i].mjt_minute = 0;
+#ifdef SPART_SHOW_STATEMENT
+    spData[i].show_statement = show_info;
+#endif
     spData[i].min_core = 0;
     spData[i].max_core = 0;
     spData[i].min_mem_gb = 0;
     spData[i].max_mem_gb = 0;
+    spData[i].visible = 1;
 /* partition_name[] */
 #ifdef __slurmdb_cluster_rec_t_defined
     spData[i].cluster_name[0] = 0;
 #endif
     spData[i].partition_name[0] = 0;
+    spData[i].partition_qos[0] = 0;
     spData[i].partition_status[0] = 0;
   }
 
@@ -874,12 +1030,21 @@ int main(int argc, char *argv[]) {
     tmp_lenght = strlen(part_ptr->name);
     if (tmp_lenght > partname_lenght) partname_lenght = tmp_lenght;
 
+    if ((part_ptr->qos_char != NULL) && (strlen(part_ptr->qos_char) > 0)) {
+      strncpy(spData[i].partition_qos, part_ptr->qos_char,
+              SPART_MAX_COLUMN_SIZE);
+      printf("\nQOS:%s\n", part_ptr->qos_char);
+      if (strncmp(part_ptr->qos_char, default_qos, SPART_MAX_COLUMN_SIZE) != 0)
+        show_qos = 1;
+    } else
+      strncpy(spData[i].partition_qos, "-", SPART_MAX_COLUMN_SIZE);
+
 #ifdef __slurmdb_cluster_rec_t_defined
     if (part_ptr->cluster_name != NULL) {
       strncpy(spData[i].cluster_name, part_ptr->cluster_name,
               SPART_MAX_COLUMN_SIZE);
       tmp_lenght = strlen(part_ptr->cluster_name);
-      if (tmp_lenght > partname_lenght) partname_lenght = tmp_lenght;
+      if (tmp_lenght > clusname_lenght) clusname_lenght = tmp_lenght;
     } else {
       strncpy(spData[i].cluster_name, cluster_name, SPART_MAX_COLUMN_SIZE);
       tmp_lenght = strlen(cluster_name);
@@ -897,30 +1062,83 @@ int main(int argc, char *argv[]) {
 #if SLURM_VERSION_NUMBER > SLURM_VERSION_NUM(18, 7, 0)
     if (part_ptr->allow_accounts != NULL) {
       strncpy(strtmp, part_ptr->allow_accounts, SPART_INFO_STRING_SIZE);
-      if (!sp_account_check(user_acct, user_acct_count, strtmp))
+      tmp_lenght = sp_account_check(user_acct, user_acct_count, strtmp);
+      if (tmp_lenght) {
+        /* more then zero in the allow list */
+        if (tmp_lenght != user_acct_count)
+          strncat(spData[i].partition_status, "a", SPART_MAX_COLUMN_SIZE);
+      } else {
         strncat(spData[i].partition_status, "A", SPART_MAX_COLUMN_SIZE);
+        spData[i].visible = 0;
+      }
     }
 
     if (part_ptr->deny_accounts != NULL) {
       strncpy(strtmp, part_ptr->deny_accounts, SPART_INFO_STRING_SIZE);
-      if (sp_account_check(user_acct, user_acct_count, strtmp))
-        strncat(spData[i].partition_status, "A", SPART_MAX_COLUMN_SIZE);
+      tmp_lenght = sp_account_check(user_acct, user_acct_count, strtmp);
+      if (tmp_lenght) {
+        /* more then zero in the deny list */
+        if (tmp_lenght != user_acct_count)
+          strncat(spData[i].partition_status, "a", SPART_MAX_COLUMN_SIZE);
+        else {
+          strncat(spData[i].partition_status, "A", SPART_MAX_COLUMN_SIZE);
+          spData[i].visible = 0;
+        }
+      }
+    }
+
+    if (part_ptr->allow_qos != NULL) {
+      strncpy(strtmp, part_ptr->allow_qos, SPART_INFO_STRING_SIZE);
+      tmp_lenght = sp_account_check(user_qos, user_qos_count, strtmp);
+      if (tmp_lenght) {
+        /* more then zero in the allow list */
+        if (tmp_lenght != user_qos_count)
+          strncat(spData[i].partition_status, "q", SPART_MAX_COLUMN_SIZE);
+      } else {
+        strncat(spData[i].partition_status, "Q", SPART_MAX_COLUMN_SIZE);
+        spData[i].visible = 0;
+      }
+    }
+
+    if (part_ptr->deny_qos != NULL) {
+      strncpy(strtmp, part_ptr->deny_qos, SPART_INFO_STRING_SIZE);
+      tmp_lenght = sp_account_check(user_qos, user_qos_count, strtmp);
+      if (tmp_lenght) {
+        /* more then zero in the deny list */
+        if (tmp_lenght != user_qos_count)
+          strncat(spData[i].partition_status, "q", SPART_MAX_COLUMN_SIZE);
+        else {
+          strncat(spData[i].partition_status, "Q", SPART_MAX_COLUMN_SIZE);
+          spData[i].visible = 0;
+        }
+      }
     }
 
     if (part_ptr->allow_groups != NULL) {
       strncpy(strtmp, part_ptr->allow_groups, SPART_INFO_STRING_SIZE);
-      if (!sp_account_check(user_group, user_group_count, strtmp))
+      tmp_lenght = sp_account_check(user_group, user_group_count, strtmp);
+      if (tmp_lenght) {
+        /* more then zero in the allow list */
+        if (tmp_lenght != user_group_count)
+          strncat(spData[i].partition_status, "g", SPART_MAX_COLUMN_SIZE);
+      } else {
         strncat(spData[i].partition_status, "G", SPART_MAX_COLUMN_SIZE);
+        spData[i].visible = 0;
+      }
     }
 
 #endif
 
     if (strncmp(user_name, "root", SPART_INFO_STRING_SIZE) == 0) {
-      if (part_ptr->flags & PART_FLAG_NO_ROOT)
+      if (part_ptr->flags & PART_FLAG_NO_ROOT) {
         strncat(spData[i].partition_status, "R", SPART_MAX_COLUMN_SIZE);
+        spData[i].visible = 0;
+      }
     } else {
-      if (part_ptr->flags & PART_FLAG_ROOT_ONLY)
+      if (part_ptr->flags & PART_FLAG_ROOT_ONLY) {
         strncat(spData[i].partition_status, "R", SPART_MAX_COLUMN_SIZE);
+        spData[i].visible = 0;
+      }
     }
 
     if (!(part_ptr->state_up & PARTITION_UP)) {
@@ -995,15 +1213,55 @@ int main(int argc, char *argv[]) {
     spheaders.min_nodes.visible = show_min_nodes;
     spheaders.max_nodes.visible = show_max_nodes;
     spheaders.mjt_time.visible = show_mjt_time;
+    spheaders.partition_qos.visible = show_qos;
+  }
+
+  if (show_all_partition) {
+    for (i = 0; i < partition_count; i++) {
+      spData[i].visible = 1;
+    }
   }
 
   /* Output is printing */
   sp_headers_print(&spheaders);
 
+#ifdef SPART_SHOW_STATEMENT
+  if (show_info)
+    printf("\n  %s %-91s %s\n\n", SPART_STATEMENT_QUEUE_LINEPRE,
+           "==================================================================="
+           "=========================",
+           SPART_STATEMENT_QUEUE_LINEPOST);
+#endif
+
   for (i = 0; i < partition_count; i++) {
     partition_print(&(spData[i]), &spheaders, show_max_mem);
   }
 
+#ifdef SPART_SHOW_STATEMENT
+  fo = fopen(SPART_STATEMENT_DIR SPART_STATEMENT_FILE, "r");
+  if (fo) {
+    printf("\n  %s %-91s %s\n", SPART_STATEMENT_LINEPRE,
+           "==================================================================="
+           "=========================",
+           SPART_STATEMENT_LINEPOST);
+    while (fgets(re_str, SPART_INFO_STRING_SIZE, fo)) {
+      /* To correctly frame some wide chars, but not all */
+      m = 0;
+      for (k = 0; (re_str[k] != '\0') && k < SPART_INFO_STRING_SIZE; k++) {
+        /*printf("%d:::%d:::%c\n",k,re_str[k],re_str[k]);*/
+        if ((re_str[k] < -58) && (re_str[k] > -62)) m++;
+        if (re_str[k] == '\n') re_str[k] = '\0';
+      }
+      printf("  %s %-*s %s\n", SPART_STATEMENT_LINEPRE, 92 + m, re_str,
+             SPART_STATEMENT_LINEPOST);
+    }
+    printf("  %s %-91s %s\n", SPART_STATEMENT_LINEPRE,
+           "=================================================================="
+           "==========================",
+           SPART_STATEMENT_LINEPOST);
+    pclose(fo);
+  }
+#endif
 #if SLURM_VERSION_NUMBER > SLURM_VERSION_NUM(18, 7, 0)
   /* free allocations */
   for (k = 0; k < user_acct_count; k++) {
