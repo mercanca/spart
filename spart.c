@@ -89,6 +89,7 @@ int spart_usage() {
       "\tC\tclosed to both the job submit and run,\n"
       "\tS\tclosed to the job submit, but the submitted jobs will run,\n"
       "\tr\trequires the reservation,\n"
+      /* "\tx\tthe exclusive job permitted,\n" */
       "\tD\topen to the job submit, but the submitted jobs will not run,\n"
       "\tR\topen for only root, or closed to root (if you are root),\n"
       "\tA\tclosed to all of your account(s),\n"
@@ -104,30 +105,67 @@ int spart_usage() {
       "The OTHER PENDING column shows core counts of pending jobs because "
       "of the other reasons such\n as license or other limits.\n\n");
   printf(
-      "If the partition's QOS NAME, MIN NODES, MAX NODES, and MAXJOBTIME "
-      "limits are not setted for\n the all partitions in your cluster, "
-       "corresponding column(s) will not be shown, except -l\n parameter "
-       "was given.\n\n");
+      "The MIN NODE and MAX NODE columns show the permitted minimum and "
+      "maximum node counts of the\n jobs which can be submited to the "
+      "partition.\n\n");
   printf(
-      "The CORES PERNODE column shows the core count of the node with "
+      "The MAXCPU/NODE column shows the permitted maximum core counts of "
+      "of the single node in\n the partition.\n\n");
+  printf(
+      "The DEFMEM GB/CPU and DEFMEM GB/NODE columns show default maximum "
+      "memory as GB which a job\n can use for a cpu or a node, "
+      "respectively.\n\n");
+  printf(
+      "The MAXMEM GB/CPU and MAXMEM GB/NODE columns show maximum "
+      "memory as GB which requestable by\n a job for a cpu or a node, "
+      "respectively.\n\n");
+  printf(
+      "The DEFJOBTIME column shows the default time limit of the job "
+      "which submited to the partition\n without a time limit. If "
+      "the DEFJOBTIME limits are not setted, or setted same value with\n "
+      "MAXJOBTIME for all partitions in your cluster, DEFJOBTIME column "
+      "will not be shown, execpt\n -l parameter was given.\n\n");
+  printf(
+      "The MAXJOBTIME column shows the maximum time limit of the job "
+      "which submited to the partition.\n If the user give a time limit "
+      "further than MAXJOBTIME limit of the partition, the job will\n be "
+      "rejected by the slurm.\n\n");
+  printf(
+      "The CORES/NODE column shows the core count of the node with "
       "lowest core count in the\n partition. But if -l was given, both "
       "the lowest and highest core counts will be shown.\n\n");
   printf(
       "The NODE MEM-GB column shows the memory of the lowest memory node "
       "in this partition. But if\n -l parameter was given, both the lowest "
       "and highest memory will be shown.\n\n");
+  printf(
+      "The QOS NAME column shows the default qos limits the job "
+      "which submited to the partition.\n If the QOS NAME of the partition "
+      "are not setted for all partitions in your cluster, QOS NAME\n column "
+      "will not be shown, execpt -l parameter was given.\n\n");
+  printf(
+      "The GRES (COUNT) column shows the generic resources of the nodes "
+      "in the partition, and (in\n paranteses) the total number of nodes "
+      "in that partition containing that GRES. The GRES (COUNT)\n column "
+      "will not be shown, execpt -l or -g parameter was given.\n\n");
+  printf(
+      "If the partition's QOS NAME, MIN NODES, MAX NODES, MAXCPU/NODE, "
+      "DEFMEM GB/CPU|NODE,\n MAXMEM GB/CPU|NODE, DEFJOBTIME, and MAXJOBTIME "
+      "limits are not setted for the all partitions\n in your cluster, "
+      "corresponding column(s) will not be shown, except -l parameter "
+      "was given.\n\n");
   printf("Parameters:\n\n");
   printf(
       "\t-m\tboth the lowest and highest values will be shown in the CORES"
-      " PERNODE\n\t\tand NODE MEM-GB columns.\n\n");
+      " /NODE\n\t\tand NODE MEM-GB columns.\n\n");
   printf("\t-a\thidden partitions also be shown.\n\n");
 #ifdef __slurmdb_cluster_rec_t_defined
   printf("\t-c\tpartitions from federated clusters be shown.\n\n");
 #endif
   printf(
-      "\t-g\tthe ouput shows each GRES (gpu, mic etc.)"
-      " defined in that partition\n\t\tand (in paranteses) the total number of "
-      "nodes in that partition\n\t\tcontaining that GRES.\n\n");
+      "\t-g\tthe ouput shows each GRES (gpu, mic etc.) defined in that "
+      "partition and\n\t\t(in paranteses) the total number of nodes in that "
+      "partition containing\n\t\tthat GRES.\n\n");
   printf(
       "\t-i\tthe info about the groups, accounts, QOSs, and queues will "
       "be shown.\n\n");
@@ -138,7 +176,7 @@ int spart_usage() {
 #ifdef SPART_COMPILE_FOR_UHEM
   printf("This is UHeM Version of the spart command.\n");
 #endif
-  printf("spart version 0.9.0\n\n");
+  printf("spart version 0.9.1\n\n");
   exit(1);
 }
 
@@ -152,19 +190,27 @@ typedef struct spart_info {
   uint32_t waiting_other;
   uint32_t min_nodes;
   uint32_t max_nodes;
+  uint64_t def_mem_per_cpu;
+  uint64_t max_mem_per_cpu;
+  uint32_t max_cpus_per_node;
   /* MaxJobTime */
   uint32_t mjt_time;
   uint16_t mjt_day;
   uint16_t mjt_hour;
   uint16_t mjt_minute;
-#ifdef SPART_SHOW_STATEMENT
-  uint16_t show_statement;
-#endif
+  /* DefaultJobTime */
+  uint32_t djt_time;
+  uint16_t djt_day;
+  uint16_t djt_hour;
+  uint16_t djt_minute;
   uint32_t min_core;
   uint32_t max_core;
   uint16_t min_mem_gb;
   uint16_t max_mem_gb;
   uint16_t visible;
+#ifdef SPART_SHOW_STATEMENT
+  uint16_t show_statement;
+#endif
   char partition_name[SPART_MAX_COLUMN_SIZE];
 #ifdef __slurmdb_cluster_rec_t_defined
   char cluster_name[SPART_MAX_COLUMN_SIZE];
@@ -265,8 +311,12 @@ typedef struct sp_headers {
   sp_column_header_t waiting_other;
   sp_column_header_t min_nodes;
   sp_column_header_t max_nodes;
+  sp_column_header_t max_cpus_per_node;
+  sp_column_header_t def_mem_per_cpu;
+  sp_column_header_t max_mem_per_cpu;
   /* MaxJobTime */
   sp_column_header_t mjt_time;
+  sp_column_header_t djt_time;
   sp_column_header_t min_core;
   sp_column_header_t min_mem_gb;
   sp_column_header_t partition_qos;
@@ -320,13 +370,29 @@ void sp_headers_set_defaults(sp_headers_t *sph) {
   strncpy(sph->waiting_other.line1, " OTHER", sph->waiting_other.column_width);
   strncpy(sph->waiting_other.line2, "PENDNG", sph->waiting_other.column_width);
   sph->min_nodes.visible = 1;
-  sph->min_nodes.column_width = 6;
-  strncpy(sph->min_nodes.line1, "   MIN", sph->min_nodes.column_width);
-  strncpy(sph->min_nodes.line2, " NODES", sph->min_nodes.column_width);
+  sph->min_nodes.column_width = 5;
+  strncpy(sph->min_nodes.line1, "  MIN", sph->min_nodes.column_width);
+  strncpy(sph->min_nodes.line2, "NODES", sph->min_nodes.column_width);
   sph->max_nodes.visible = 1;
   sph->max_nodes.column_width = 6;
   strncpy(sph->max_nodes.line1, "   MAX", sph->max_nodes.column_width);
   strncpy(sph->max_nodes.line2, " NODES", sph->max_nodes.column_width);
+  sph->max_cpus_per_node.visible = 0;
+  sph->max_cpus_per_node.column_width = 6;
+  strncpy(sph->max_cpus_per_node.line1, "MAXCPU", sph->max_cpus_per_node.column_width);
+  strncpy(sph->max_cpus_per_node.line2, " /NODE", sph->max_cpus_per_node.column_width);
+  sph->max_mem_per_cpu.visible = 0;
+  sph->max_mem_per_cpu.column_width = 6;
+  strncpy(sph->max_mem_per_cpu.line1, "MAXMEM", sph->max_mem_per_cpu.column_width);
+  strncpy(sph->max_mem_per_cpu.line2, "GB/CPU", sph->max_mem_per_cpu.column_width);
+  sph->def_mem_per_cpu.visible = 0;
+  sph->def_mem_per_cpu.column_width = 6;
+  strncpy(sph->def_mem_per_cpu.line1, "DEFMEM", sph->def_mem_per_cpu.column_width);
+  strncpy(sph->def_mem_per_cpu.line2, "GB/CPU", sph->def_mem_per_cpu.column_width);
+  sph->djt_time.visible = 0;
+  sph->djt_time.column_width = 10;
+  strncpy(sph->djt_time.line1, "DEFJOBTIME", sph->djt_time.column_width);
+  strncpy(sph->djt_time.line2, " DAY-HR:MN", sph->djt_time.column_width);
   sph->mjt_time.visible = 1;
   sph->mjt_time.column_width = 10;
   strncpy(sph->mjt_time.line1, "MAXJOBTIME", sph->mjt_time.column_width);
@@ -366,6 +432,10 @@ void sp_headers_set_parameter_L(sp_headers_t *sph) {
   sph->waiting_other.visible = 1;
   sph->min_nodes.visible = 1;
   sph->max_nodes.visible = 1;
+  sph->max_cpus_per_node.visible = 1;
+  sph->max_mem_per_cpu.visible = 1;
+  sph->def_mem_per_cpu.visible = 1;
+  sph->djt_time.visible = 1;
   sph->mjt_time.visible = 1;
   sph->min_core.visible = 1;
   sph->min_mem_gb.visible = 1;
@@ -412,6 +482,10 @@ void sp_headers_print(sp_headers_t *sph) {
   sp_column_header_print(line1, line2, &(sph->waiting_other));
   sp_column_header_print(line1, line2, &(sph->min_nodes));
   sp_column_header_print(line1, line2, &(sph->max_nodes));
+  sp_column_header_print(line1, line2, &(sph->max_cpus_per_node));
+  sp_column_header_print(line1, line2, &(sph->def_mem_per_cpu));
+  sp_column_header_print(line1, line2, &(sph->max_mem_per_cpu));
+  sp_column_header_print(line1, line2, &(sph->djt_time));
   sp_column_header_print(line1, line2, &(sph->mjt_time));
   sp_column_header_print(line1, line2, &(sph->min_core));
   sp_column_header_print(line1, line2, &(sph->min_mem_gb));
@@ -505,7 +579,6 @@ void statement_print(const char *stfile, const char *stpartition) {
       /* To correctly frame some wide chars, but not all */
       m = 0;
       for (k = 0; (re_str[k] != '\0') && k < SPART_INFO_STRING_SIZE; k++) {
-        /*printf("%d:::%d:::%c\n",k,re_str[k],re_str[k]);*/
         if ((re_str[k] < -58) && (re_str[k] > -62)) m++;
         if (re_str[k] == '\n') re_str[k] = '\0';
       }
@@ -516,7 +589,6 @@ void statement_print(const char *stfile, const char *stpartition) {
            "------------------------------------------------------------------"
            "--------------------------",
            SPART_STATEMENT_QUEUE_LINEPOST);
-    /*printf("\n");*/
     pclose(fo);
   } else
     printf("  %s %-91s %s\n", SPART_STATEMENT_QUEUE_LINEPRE,
@@ -557,6 +629,30 @@ void partition_print(spart_info_t *sp, sp_headers_t *sph, int show_max_mem) {
         printf("     - ");
       else
         con_print(sp->max_nodes, sph->max_nodes.column_width);
+    }
+    if (sph->max_cpus_per_node.visible) {
+      if ((sp->max_cpus_per_node == UINT_MAX) || (sp->max_cpus_per_node == 0))
+       printf("     - ");
+      else
+        con_print(sp->max_cpus_per_node, sph->max_cpus_per_node.column_width);
+    }
+    if (sph->def_mem_per_cpu.visible) {
+      if ((sp->def_mem_per_cpu == UINT_MAX) || (sp->def_mem_per_cpu == 0))
+      printf("     - ");
+      else
+        con_print(sp->def_mem_per_cpu, sph->def_mem_per_cpu.column_width);
+    }
+    if (sph->max_mem_per_cpu.visible) {
+      if ((sp->max_mem_per_cpu == UINT_MAX) || (sp->max_mem_per_cpu == 0))
+       printf("     - ");
+     else
+        con_print(sp->max_mem_per_cpu, sph->max_mem_per_cpu.column_width);
+    }
+    if (sph->djt_time.visible) {
+      if (sp->djt_time == INFINITE)
+        printf("    -     ");
+      else
+        printf("%4d-%02d:%02d ", sp->djt_day, sp->djt_hour, sp->djt_minute);
     }
     if (sph->mjt_time.visible) {
       if (sp->mjt_time == INFINITE)
@@ -629,9 +725,14 @@ int main(int argc, char *argv[]) {
 
   uint32_t mem, cpus, min_mem, max_mem;
   uint32_t max_cpu, min_cpu, free_cpu, free_node;
+  uint64_t max_mem_per_cpu= 0;
+  uint64_t def_mem_per_cpu= 0;
   /* These values are default/unsetted values */
-  uint32_t default_min_nodes = 0, default_max_nodes = UINT_MAX;
-  uint32_t default_mjt_time = INFINITE;
+  const uint32_t default_min_nodes = 0, default_max_nodes = UINT_MAX;
+  const uint64_t default_max_mem_per_cpu= 0;
+  const uint64_t default_def_mem_per_cpu= 0;
+  const uint32_t default_max_cpus_per_node= UINT_MAX;
+  const uint32_t default_mjt_time = INFINITE;
   char *default_qos = "normal";
 
   uint16_t alloc_cpus = 0;
@@ -649,11 +750,15 @@ int main(int argc, char *argv[]) {
   uint32_t state;
   uint16_t tmp_lenght = 0;
   int show_max_mem = 0;
+  int show_max_mem_per_cpu = 0;
+  int show_max_cpus_per_node = 0;
+  int show_def_mem_per_cpu = 0;
   uint16_t show_partition = 0;
   uint16_t show_qos = 0;
   uint16_t show_min_nodes = 0;
   uint16_t show_max_nodes = 0;
   uint16_t show_mjt_time = 0;
+  uint16_t show_djt_time = 0;
   int show_parameter_L = 0;
   int show_gres = 0;
   int show_all_partition = 0;
@@ -752,7 +857,11 @@ int main(int argc, char *argv[]) {
       show_gres = 1;
       show_min_nodes = 1;
       show_max_nodes = 1;
+      show_max_cpus_per_node = 1;
+      show_max_mem_per_cpu = 1;
+      show_def_mem_per_cpu = 1;
       show_mjt_time = 1;
+      show_djt_time = 1;
       show_qos = 1;
       show_parameter_L = 1;
       show_all_partition = 1;
@@ -791,8 +900,9 @@ int main(int argc, char *argv[]) {
   /* to check that can we read pending jobs info */
   if (conf_info_msg_ptr->private_data & PRIVATE_DATA_JOBS) {
     printf(
-        "WARNING: Because of the restriction of the other users' jobs info,\n  "
-        "       spart can not show other users' waiting jobs info!\n\n");
+        "WARNING: Because of the slurm settings have a restriction "
+        "to see the job information of the other users,\n"
+        "\tthe spart can not show other users' waiting jobs info!\n\n");
   }
 
 #if SLURM_VERSION_NUMBER > SLURM_VERSION_NUM(18, 7, 0)
@@ -900,11 +1010,18 @@ int main(int argc, char *argv[]) {
     spData[i].waiting_other = 0;
     spData[i].min_nodes = 0;
     spData[i].max_nodes = 0;
+    spData[i].max_cpus_per_node = 0;
+    spData[i].max_mem_per_cpu = 0;
     /* MaxJobTime */
     spData[i].mjt_time = 0;
     spData[i].mjt_day = 0;
     spData[i].mjt_hour = 0;
     spData[i].mjt_minute = 0;
+    /* DefaultJobTime */
+    spData[i].djt_time = 0;
+    spData[i].djt_day = 0;
+    spData[i].djt_hour = 0;
+    spData[i].djt_minute = 0;
 #ifdef SPART_SHOW_STATEMENT
     spData[i].show_statement = show_info;
 #endif
@@ -961,6 +1078,8 @@ int main(int argc, char *argv[]) {
     free_cpu = 0;
     free_node = 0;
     alloc_cpus = 0;
+    max_mem_per_cpu =0;
+    def_mem_per_cpu =0;
 
     sp_gres_reset_counts(spgres, &sp_gres_count);
 
@@ -1007,38 +1126,6 @@ int main(int argc, char *argv[]) {
       }
     }
 
-    spData[i].free_cpu = free_cpu;
-    spData[i].total_cpu = part_ptr->total_cpus;
-    spData[i].free_node = free_node;
-    spData[i].total_node = part_ptr->total_nodes;
-    /* spData[i].waiting_resource and spData[i].waiting_other previously set */
-    spData[i].min_nodes = part_ptr->min_nodes;
-    if (part_ptr->min_nodes != default_min_nodes) show_min_nodes = 1;
-    spData[i].max_nodes = part_ptr->max_nodes;
-    if (part_ptr->max_nodes != default_max_nodes) show_max_nodes = 1;
-    spData[i].mjt_time = part_ptr->max_time;
-    if (part_ptr->max_time != default_mjt_time) show_mjt_time = 1;
-    spData[i].mjt_day = part_ptr->max_time / 1440;
-    spData[i].mjt_hour = (part_ptr->max_time - (spData[i].mjt_day * 1440)) / 60;
-    spData[i].mjt_minute = part_ptr->max_time - (spData[i].mjt_day * 1440) -
-                           (spData[i].mjt_hour * (uint16_t)60);
-    spData[i].min_core = min_cpu;
-    spData[i].max_core = max_cpu;
-    spData[i].max_mem_gb = (uint16_t)(max_mem / 1000u);
-    spData[i].min_mem_gb = (uint16_t)(min_mem / 1000u);
-    strncpy(spData[i].partition_name, part_ptr->name, SPART_MAX_COLUMN_SIZE);
-    tmp_lenght = strlen(part_ptr->name);
-    if (tmp_lenght > partname_lenght) partname_lenght = tmp_lenght;
-
-    if ((part_ptr->qos_char != NULL) && (strlen(part_ptr->qos_char) > 0)) {
-      strncpy(spData[i].partition_qos, part_ptr->qos_char,
-              SPART_MAX_COLUMN_SIZE);
-      printf("\nQOS:%s\n", part_ptr->qos_char);
-      if (strncmp(part_ptr->qos_char, default_qos, SPART_MAX_COLUMN_SIZE) != 0)
-        show_qos = 1;
-    } else
-      strncpy(spData[i].partition_qos, "-", SPART_MAX_COLUMN_SIZE);
-
 #ifdef __slurmdb_cluster_rec_t_defined
     if (part_ptr->cluster_name != NULL) {
       strncpy(spData[i].cluster_name, part_ptr->cluster_name,
@@ -1069,7 +1156,7 @@ int main(int argc, char *argv[]) {
           strncat(spData[i].partition_status, "a", SPART_MAX_COLUMN_SIZE);
       } else {
         strncat(spData[i].partition_status, "A", SPART_MAX_COLUMN_SIZE);
-        spData[i].visible = 0;
+        if (!show_all_partition) spData[i].visible = 0;
       }
     }
 
@@ -1082,7 +1169,7 @@ int main(int argc, char *argv[]) {
           strncat(spData[i].partition_status, "a", SPART_MAX_COLUMN_SIZE);
         else {
           strncat(spData[i].partition_status, "A", SPART_MAX_COLUMN_SIZE);
-          spData[i].visible = 0;
+          if (!show_all_partition) spData[i].visible = 0;
         }
       }
     }
@@ -1096,7 +1183,7 @@ int main(int argc, char *argv[]) {
           strncat(spData[i].partition_status, "q", SPART_MAX_COLUMN_SIZE);
       } else {
         strncat(spData[i].partition_status, "Q", SPART_MAX_COLUMN_SIZE);
-        spData[i].visible = 0;
+        if (!show_all_partition) spData[i].visible = 0;
       }
     }
 
@@ -1109,7 +1196,7 @@ int main(int argc, char *argv[]) {
           strncat(spData[i].partition_status, "q", SPART_MAX_COLUMN_SIZE);
         else {
           strncat(spData[i].partition_status, "Q", SPART_MAX_COLUMN_SIZE);
-          spData[i].visible = 0;
+          if (!show_all_partition) spData[i].visible = 0;
         }
       }
     }
@@ -1123,7 +1210,7 @@ int main(int argc, char *argv[]) {
           strncat(spData[i].partition_status, "g", SPART_MAX_COLUMN_SIZE);
       } else {
         strncat(spData[i].partition_status, "G", SPART_MAX_COLUMN_SIZE);
-        spData[i].visible = 0;
+        if (!show_all_partition) spData[i].visible = 0;
       }
     }
 
@@ -1132,12 +1219,12 @@ int main(int argc, char *argv[]) {
     if (strncmp(user_name, "root", SPART_INFO_STRING_SIZE) == 0) {
       if (part_ptr->flags & PART_FLAG_NO_ROOT) {
         strncat(spData[i].partition_status, "R", SPART_MAX_COLUMN_SIZE);
-        spData[i].visible = 0;
+        if (!show_all_partition) spData[i].visible = 0;
       }
     } else {
       if (part_ptr->flags & PART_FLAG_ROOT_ONLY) {
         strncat(spData[i].partition_status, "R", SPART_MAX_COLUMN_SIZE);
-        spData[i].visible = 0;
+        if (!show_all_partition) spData[i].visible = 0;
       }
     }
 
@@ -1152,6 +1239,9 @@ int main(int argc, char *argv[]) {
 
     if (part_ptr->flags & PART_FLAG_REQ_RESV)
       strncat(spData[i].partition_status, "r", SPART_MAX_COLUMN_SIZE);
+
+    /* if (part_ptr->flags & PART_FLAG_EXCLUSIVE_USER)
+      strncat(spData[i].partition_status, "x", SPART_MAX_COLUMN_SIZE);*/
 
     /* spgre (GRES) data converting to string */
     if (sp_gres_count == 0) {
@@ -1168,6 +1258,75 @@ int main(int argc, char *argv[]) {
         strncat(spData[i].gres, mem_result, SPART_INFO_STRING_SIZE);
       }
     }
+
+    spData[i].free_cpu = free_cpu;
+    spData[i].total_cpu = part_ptr->total_cpus;
+    spData[i].free_node = free_node;
+    spData[i].total_node = part_ptr->total_nodes;
+    /* spData[i].waiting_resource and spData[i].waiting_other previously set */
+    spData[i].min_nodes = part_ptr->min_nodes;
+    if ((part_ptr->min_nodes != default_min_nodes) && (spData[i].visible)) show_min_nodes = 1;
+    spData[i].max_nodes = part_ptr->max_nodes;
+    if ((part_ptr->max_nodes != default_max_nodes) && (spData[i].visible)) show_max_nodes = 1;
+    spData[i].max_cpus_per_node = part_ptr->max_cpus_per_node;
+    if ((part_ptr->max_cpus_per_node != default_max_cpus_per_node) && (part_ptr->max_cpus_per_node != 0) &&(spData[i].visible)) show_max_cpus_per_node = 1;
+
+    /* the def_mem_per_cpu and max_mem_per_cpu members contains 
+     * both FLAG bit (MEM_PER_CPU) for CPU/NODE selection, and values. */
+    def_mem_per_cpu =part_ptr->def_mem_per_cpu;
+    if (def_mem_per_cpu & MEM_PER_CPU)
+    {
+      strncpy(spheaders.def_mem_per_cpu.line2, "GB/CPU", spheaders.def_mem_per_cpu.column_width);
+      def_mem_per_cpu = def_mem_per_cpu & (~MEM_PER_CPU);
+    }
+    else    
+    {
+      strncpy(spheaders.def_mem_per_cpu.line2, "G/NODE", spheaders.def_mem_per_cpu.column_width);
+    }    
+    spData[i].def_mem_per_cpu = (uint64_t) (def_mem_per_cpu/1000u);
+    if ((def_mem_per_cpu != default_def_mem_per_cpu) &&(spData[i].visible)) show_def_mem_per_cpu = 1;
+
+    max_mem_per_cpu =part_ptr->max_mem_per_cpu;
+    if (max_mem_per_cpu & MEM_PER_CPU)
+    {
+      strncpy(spheaders.max_mem_per_cpu.line2, "GB/CPU", spheaders.max_mem_per_cpu.column_width);
+      max_mem_per_cpu = max_mem_per_cpu & (~MEM_PER_CPU);
+    }
+    else    
+    {
+      strncpy(spheaders.max_mem_per_cpu.line2, "G/NODE", spheaders.max_mem_per_cpu.column_width);
+    }    
+    spData[i].max_mem_per_cpu = (uint64_t) (max_mem_per_cpu/1000u);
+    if ((max_mem_per_cpu != default_max_mem_per_cpu) &&(spData[i].visible)) show_max_mem_per_cpu = 1;
+
+    spData[i].mjt_time = part_ptr->max_time;
+    if ((part_ptr->max_time != default_mjt_time) && (spData[i].visible)) show_mjt_time = 1;
+    spData[i].mjt_day = part_ptr->max_time / 1440;
+    spData[i].mjt_hour = (part_ptr->max_time - (spData[i].mjt_day * 1440)) / 60;
+    spData[i].mjt_minute = part_ptr->max_time - (spData[i].mjt_day * 1440) -
+                           (spData[i].mjt_hour * (uint16_t)60);
+    spData[i].djt_time = part_ptr->default_time;
+    if ((part_ptr->default_time != default_mjt_time) && (part_ptr->default_time != part_ptr->max_time) && (spData[i].visible)) show_djt_time = 1;
+    spData[i].djt_day = part_ptr->default_time / 1440;
+    spData[i].djt_hour = (part_ptr->default_time - (spData[i].djt_day * 1440)) / 60;
+    spData[i].djt_minute = part_ptr->default_time - (spData[i].djt_day * 1440) -
+                           (spData[i].djt_hour * (uint16_t)60);
+    spData[i].min_core = min_cpu;
+    spData[i].max_core = max_cpu;
+    spData[i].max_mem_gb = (uint16_t)(max_mem / 1000u);
+    spData[i].min_mem_gb = (uint16_t)(min_mem / 1000u);
+    strncpy(spData[i].partition_name, part_ptr->name, SPART_MAX_COLUMN_SIZE);
+    tmp_lenght = strlen(part_ptr->name);
+    if (tmp_lenght > partname_lenght) partname_lenght = tmp_lenght;
+
+    if ((part_ptr->qos_char != NULL) && (strlen(part_ptr->qos_char) > 0)) {
+      strncpy(spData[i].partition_qos, part_ptr->qos_char,
+              SPART_MAX_COLUMN_SIZE);
+      if (strncmp(part_ptr->qos_char, default_qos, SPART_MAX_COLUMN_SIZE) != 0)
+        show_qos = 1;
+    } else
+      strncpy(spData[i].partition_qos, "-", SPART_MAX_COLUMN_SIZE);
+
   }
 
   if (partname_lenght > spheaders.partition_name.column_width) {
@@ -1212,7 +1371,11 @@ int main(int argc, char *argv[]) {
   if (!show_parameter_L) {
     spheaders.min_nodes.visible = show_min_nodes;
     spheaders.max_nodes.visible = show_max_nodes;
+    spheaders.max_cpus_per_node.visible = show_max_cpus_per_node;
+    spheaders.max_mem_per_cpu.visible = show_max_mem_per_cpu;
+    spheaders.def_mem_per_cpu.visible = show_def_mem_per_cpu;
     spheaders.mjt_time.visible = show_mjt_time;
+    spheaders.djt_time.visible = show_djt_time;
     spheaders.partition_qos.visible = show_qos;
   }
 
@@ -1248,7 +1411,6 @@ int main(int argc, char *argv[]) {
       /* To correctly frame some wide chars, but not all */
       m = 0;
       for (k = 0; (re_str[k] != '\0') && k < SPART_INFO_STRING_SIZE; k++) {
-        /*printf("%d:::%d:::%c\n",k,re_str[k],re_str[k]);*/
         if ((re_str[k] < -58) && (re_str[k] > -62)) m++;
         if (re_str[k] == '\n') re_str[k] = '\0';
       }

@@ -14,17 +14,17 @@
 
 ```
  $ spart
-     QUEUE STA   FREE  TOTAL   FREE  TOTAL RESORC  OTHER    MIN    MAX MAXJOBTIME  CORES   NODE
- PARTITION TUS  CORES  CORES  NODES  NODES PENDNG PENDNG  NODES  NODES  DAY-HR:MN  /NODE MEM-GB
-      defq   *    336   2436     12     87      0      0      1      -    7-00:00     28    126
-    shortq        504   2604     18     93      0      0      1      2    0-01:00     28    126
-     longq         96    336      4     14      0      0      1      -   21-00:00     24     62
-      gpuq        112    112      4      4      0      0      1      -    7-00:00     28    126
-   bigmemq        112    280      4     10      0      0      1      -    7-00:00     28    510
-     v100q         40     40      1      1      0      0      1      1    1-00:00     40    375
-     b224q        448   2548     16     91      0      0      8     40    1-00:00     28    126
-   core40q        160   1400      4     35    240      0      1      -    7-00:00     40    190
- 
+     QUEUE STA   FREE  TOTAL   FREE  TOTAL RESORC  OTHER   MIN    MAX MAXJOBTIME  CORES   NODE
+ PARTITION TUS  CORES  CORES  NODES  NODES PENDNG PENDNG NODES  NODES  DAY-HR:MN  /NODE MEM-GB
+      defq   *    140   2436      5     87      0      0     1      -    7-00:00     28    126
+    shortq        196   2604      7     93      0      0     1      2    0-01:00     28    126
+     longq          0    336      0     14     24      0     1      -   21-00:00     24     62
+      gpuq         56    112      2      4      0      0     1      -    7-00:00     28    126
+   bigmemq         56    280      2     10      0      0     1      -    7-00:00     28    510
+     v100q          0     40      0      1      0      0     1      1    1-00:00     40    375
+     b224q        168   2548      6     91    672      0     8     40    1-00:00     28    126
+   core40q        280   1400      7     35      0      0     1      -    7-00:00     40    190
+
 ```
 
  In the **STA-TUS** column, the characters means, the partition is:
@@ -49,15 +49,45 @@
  The **OTHER PENDING** column shows core counts of pending jobs because of the other reasons such
  as license or other limits.
 
- If the partition's **QOS NAME, MIN NODES, MAX NODES,** and **MAXJOBTIME** limits are not setted for 
- the all partitions in your cluster, corresponding column(s) will not be shown, except -l
- parameter was given.
+The MIN NODE and MAX NODE columns show the permitted minimum and maximum node counts of the
+ jobs which can be submited to the partition.
+
+The **MAXCPU/NODE** column shows the permitted maximum core counts of of the single node in
+ the partition.
+
+
+The **DEFMEM GB/CPU** and **DEFMEM GB/NODE** columns show default maximum memory as GB which a job
+ can use for a cpu or a node, respectively.
+
+The **MAXMEM GB/CPU** and **MAXMEM GB/NODE** columns show maximum memory as GB which requestable by
+ a job for a cpu or a node, respectively.
+
+ The **DEFJOBTIME** column shows the default time limit of the job which submited to the partition
+ without a time limit. If the DEFJOBTIME limits are not setted, or setted same value with
+ MAXJOBTIME for all partitions in your cluster, DEFJOBTIME column will not be shown, execpt
+ -l parameter was given.
+
+ The **MAXJOBTIME** column shows the maximum time limit of the job which submited to the partition.
+ If the user give a time limit further than MAXJOBTIME limit of the partition, the job will be
+ rejected by the slurm.
 
  The **CORES /NODE** column shows the core count of the node with lowest core count in the
  partition. But if -l was given, both the lowest and highest core counts will be shown.
 
  The **NODE MEM-GB** column shows the memory of the lowest memory node in this partition. But if
  -l parameter was given, both the lowest and highest memory will be shown.
+
+ The **QOS NAME** column shows the default qos limits the job which submited to the partition.
+ If the QOS NAME of the partition are not setted for all partitions in your cluster, QOS NAME
+ column will not be shown, execpt -l parameter was given.
+
+ The **GRES (COUNT)** column shows the generic resources of the nodes in the partition, and (in
+ paranteses) the total number of nodes in that partition containing that GRES. The GRES (COUNT)
+ column will not be shown, execpt -l or -g parameter was given.
+
+If the partition's **QOS NAME, MIN NODES, MAX NODES, MAXCPU/NODE, DEFMEM GB/CPU|NODE,
+ MAXMEM GB/CPU|NODE, DEFJOBTIME**, and **MAXJOBTIME** limits are not setted for the all partitions
+ in your cluster, corresponding column(s) will not be shown, except -l parameter was given.
 
  Parameters:
 
@@ -82,19 +112,19 @@ If you compare the output above with the output with -l parameter (below), unusa
  were not shown without -l parameter:
 ```
 $ spart -l
-     QUEUE STA   FREE  TOTAL   FREE  TOTAL RESORC  OTHER    MIN    MAX MAXJOBTIME    CORES       NODE    QOS   GRES
- PARTITION TUS  CORES  CORES  NODES  NODES PENDNG PENDNG  NODES  NODES  DAY-HR:MN    /NODE     MEM-GB   NAME (COUNT)
-      defq   *    532   2436     19     87      0      0      1      -    7-00:00       28    126-510      -  -
-    shortq        616   2604     22     93      0      0      1      2    0-01:00       28    126-510      -  gpu:k20m:1(4)
-     longq         96    336      4     14      0      0      1      -   21-00:00       24         62      -  -
-      gpuq         56    112      2      4      0      0      1      -    7-00:00       28    126-510      -  gpu:k20m:1(4)
-   bigmemq         56    280      2     10      0      0      1      -    7-00:00       28        510      -  gpu:k20m:1(1)
-     v100q         40     40      1      1      0      0      1      1    1-00:00       40        375      -  gpu:v100:4(1)
-      yzmq   A     40     40      1      1      0      0      1      1    7-00:00       40        375      -  gpu:v100:4(1)
-     b224q        560   2548     20     91      0      0      8     40    1-00:00       28    126-510      -  gpu:k20m:1(2)
-   hbm513q   G    504   2240     18     80      0      0      1     10    0-00:30       28        126      -  -
-   core40q        160   1400      4     35    240      0      1      -    7-00:00       40        190      -  -
-       all   .    912   4380     31    143      0      0      1      -     -         24-40     62-510      -  gpu:k20m:1(4),gpu:v100:4(1) 
+     QUEUE STA   FREE  TOTAL   FREE  TOTAL RESORC  OTHER   MIN    MAX MAXCPU DEFMEM MAXMEM DEFJOBTIME MAXJOBTIME    CORES       NODE    QOS   GRES
+ PARTITION TUS  CORES  CORES  NODES  NODES PENDNG PENDNG NODES  NODES  /NODE G/NODE G/NODE  DAY-HR:MN  DAY-HR:MN    /NODE     MEM-GB   NAME (COUNT)
+      defq   *    140   2436      5     87      0      0     1      -      -      -      -    7-00:00    7-00:00       28    126-510      -  -
+    shortq        196   2604      7     93      0      0     1      2      -      -      -    0-01:00    0-01:00       28    126-510      -  gpu:k20m:1(4)
+     longq          0    336      0     14     24      0     1      -      -      -      -   21-00:00   21-00:00       24         62      -  -
+      gpuq         56    112      2      4      0      0     1      -      -      -      -    7-00:00    7-00:00       28    126-510      -  gpu:k20m:1(4)
+   bigmemq         56    280      2     10      0      0     1      -      -      -      -    7-00:00    7-00:00       28        510      -  gpu:k20m:1(1)
+     v100q          0     40      0      1      0      0     1      1      -      -      -    1-00:00    1-00:00       40        375      -  gpu:v100:4(1)
+      yzmq   A      0     40      0      1      0      0     1      1      -      -      -    7-00:00    7-00:00       40        375      -  gpu:v100:4(1)
+     b224q        168   2548      6     91    672      0     8     40      -      -      -    1-00:00    1-00:00       28    126-510      -  gpu:k20m:1(2)
+   hbm513q   G     84   2240      3     80      0      0     1     10      -      -      -    0-00:30    0-00:30       28        126      -  -
+   core40q        280   1400      7     35      0      0     1      -      -      -      -    7-00:00    7-00:00       40        190      -  -
+       all   .    476   4380     14    143      0      0     1      -      -      -      -    1-00:00     -         24-40     62-510      -  gpu:k20m:1(4),gpu:v100:4(1)
 
 ```
 
@@ -125,8 +155,8 @@ When STATEMET feature is on (the **SPART_SHOW_STATEMENT** macro is defined), the
  Therefore, there is no need to recompile to reshow or cancel statements. You can edit or remove
  statement files after compiling. If you want to show again, just write new file(s).
 
- The spart also can show the statements using different font and background colors. The style of
- the cluster's statement and the partitions' statements can be setted differently.
+ The spart also can show the statements using different font sytles and background colors. The 
+ style of the cluster's statement and the partitions' statements can be setted differently.
 
 For example, the output at the below shows the cluster statement file exist:
 ```
@@ -238,7 +268,7 @@ spart -i
 
 ## Debug
 
- If you notice a bug of the spart, please report using the github site.
+ If you notice a bug of the spart, please report using the issues page of the github site.
 
  It is not possible to test spart on the every slurm configuration and cluster. Thanks.
 
