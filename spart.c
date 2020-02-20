@@ -176,7 +176,7 @@ int spart_usage() {
 #ifdef SPART_COMPILE_FOR_UHEM
   printf("This is UHeM Version of the spart command.\n");
 #endif
-  printf("spart version 0.9.1\n\n");
+  printf("spart version 0.9.2\n\n");
   exit(1);
 }
 
@@ -379,16 +379,22 @@ void sp_headers_set_defaults(sp_headers_t *sph) {
   strncpy(sph->max_nodes.line2, " NODES", sph->max_nodes.column_width);
   sph->max_cpus_per_node.visible = 0;
   sph->max_cpus_per_node.column_width = 6;
-  strncpy(sph->max_cpus_per_node.line1, "MAXCPU", sph->max_cpus_per_node.column_width);
-  strncpy(sph->max_cpus_per_node.line2, " /NODE", sph->max_cpus_per_node.column_width);
+  strncpy(sph->max_cpus_per_node.line1, "MAXCPU",
+          sph->max_cpus_per_node.column_width);
+  strncpy(sph->max_cpus_per_node.line2, " /NODE",
+          sph->max_cpus_per_node.column_width);
   sph->max_mem_per_cpu.visible = 0;
   sph->max_mem_per_cpu.column_width = 6;
-  strncpy(sph->max_mem_per_cpu.line1, "MAXMEM", sph->max_mem_per_cpu.column_width);
-  strncpy(sph->max_mem_per_cpu.line2, "GB/CPU", sph->max_mem_per_cpu.column_width);
+  strncpy(sph->max_mem_per_cpu.line1, "MAXMEM",
+          sph->max_mem_per_cpu.column_width);
+  strncpy(sph->max_mem_per_cpu.line2, "GB/CPU",
+          sph->max_mem_per_cpu.column_width);
   sph->def_mem_per_cpu.visible = 0;
   sph->def_mem_per_cpu.column_width = 6;
-  strncpy(sph->def_mem_per_cpu.line1, "DEFMEM", sph->def_mem_per_cpu.column_width);
-  strncpy(sph->def_mem_per_cpu.line2, "GB/CPU", sph->def_mem_per_cpu.column_width);
+  strncpy(sph->def_mem_per_cpu.line1, "DEFMEM",
+          sph->def_mem_per_cpu.column_width);
+  strncpy(sph->def_mem_per_cpu.line2, "GB/CPU",
+          sph->def_mem_per_cpu.column_width);
   sph->djt_time.visible = 0;
   sph->djt_time.column_width = 10;
   strncpy(sph->djt_time.line1, "DEFJOBTIME", sph->djt_time.column_width);
@@ -632,24 +638,24 @@ void partition_print(spart_info_t *sp, sp_headers_t *sph, int show_max_mem) {
     }
     if (sph->max_cpus_per_node.visible) {
       if ((sp->max_cpus_per_node == UINT_MAX) || (sp->max_cpus_per_node == 0))
-       printf("     - ");
+        printf("     - ");
       else
         con_print(sp->max_cpus_per_node, sph->max_cpus_per_node.column_width);
     }
     if (sph->def_mem_per_cpu.visible) {
       if ((sp->def_mem_per_cpu == UINT_MAX) || (sp->def_mem_per_cpu == 0))
-      printf("     - ");
+        printf("     - ");
       else
         con_print(sp->def_mem_per_cpu, sph->def_mem_per_cpu.column_width);
     }
     if (sph->max_mem_per_cpu.visible) {
       if ((sp->max_mem_per_cpu == UINT_MAX) || (sp->max_mem_per_cpu == 0))
-       printf("     - ");
-     else
+        printf("     - ");
+      else
         con_print(sp->max_mem_per_cpu, sph->max_mem_per_cpu.column_width);
     }
     if (sph->djt_time.visible) {
-      if (sp->djt_time == INFINITE)
+      if ((sp->djt_time == INFINITE) || (sp->djt_time == NO_VAL))
         printf("    -     ");
       else
         printf("%4d-%02d:%02d ", sp->djt_day, sp->djt_hour, sp->djt_minute);
@@ -725,13 +731,13 @@ int main(int argc, char *argv[]) {
 
   uint32_t mem, cpus, min_mem, max_mem;
   uint32_t max_cpu, min_cpu, free_cpu, free_node;
-  uint64_t max_mem_per_cpu= 0;
-  uint64_t def_mem_per_cpu= 0;
+  uint64_t max_mem_per_cpu = 0;
+  uint64_t def_mem_per_cpu = 0;
   /* These values are default/unsetted values */
   const uint32_t default_min_nodes = 0, default_max_nodes = UINT_MAX;
-  const uint64_t default_max_mem_per_cpu= 0;
-  const uint64_t default_def_mem_per_cpu= 0;
-  const uint32_t default_max_cpus_per_node= UINT_MAX;
+  const uint64_t default_max_mem_per_cpu = 0;
+  const uint64_t default_def_mem_per_cpu = 0;
+  const uint32_t default_max_cpus_per_node = UINT_MAX;
   const uint32_t default_mjt_time = INFINITE;
   char *default_qos = "normal";
 
@@ -1078,8 +1084,8 @@ int main(int argc, char *argv[]) {
     free_cpu = 0;
     free_node = 0;
     alloc_cpus = 0;
-    max_mem_per_cpu =0;
-    def_mem_per_cpu =0;
+    max_mem_per_cpu = 0;
+    def_mem_per_cpu = 0;
 
     sp_gres_reset_counts(spgres, &sp_gres_count);
 
@@ -1265,50 +1271,59 @@ int main(int argc, char *argv[]) {
     spData[i].total_node = part_ptr->total_nodes;
     /* spData[i].waiting_resource and spData[i].waiting_other previously set */
     spData[i].min_nodes = part_ptr->min_nodes;
-    if ((part_ptr->min_nodes != default_min_nodes) && (spData[i].visible)) show_min_nodes = 1;
+    if ((part_ptr->min_nodes != default_min_nodes) && (spData[i].visible))
+      show_min_nodes = 1;
     spData[i].max_nodes = part_ptr->max_nodes;
-    if ((part_ptr->max_nodes != default_max_nodes) && (spData[i].visible)) show_max_nodes = 1;
+    if ((part_ptr->max_nodes != default_max_nodes) && (spData[i].visible))
+      show_max_nodes = 1;
     spData[i].max_cpus_per_node = part_ptr->max_cpus_per_node;
-    if ((part_ptr->max_cpus_per_node != default_max_cpus_per_node) && (part_ptr->max_cpus_per_node != 0) &&(spData[i].visible)) show_max_cpus_per_node = 1;
+    if ((part_ptr->max_cpus_per_node != default_max_cpus_per_node) &&
+        (part_ptr->max_cpus_per_node != 0) && (spData[i].visible))
+      show_max_cpus_per_node = 1;
 
-    /* the def_mem_per_cpu and max_mem_per_cpu members contains 
+    /* the def_mem_per_cpu and max_mem_per_cpu members contains
      * both FLAG bit (MEM_PER_CPU) for CPU/NODE selection, and values. */
-    def_mem_per_cpu =part_ptr->def_mem_per_cpu;
-    if (def_mem_per_cpu & MEM_PER_CPU)
-    {
-      strncpy(spheaders.def_mem_per_cpu.line2, "GB/CPU", spheaders.def_mem_per_cpu.column_width);
+    def_mem_per_cpu = part_ptr->def_mem_per_cpu;
+    if (def_mem_per_cpu & MEM_PER_CPU) {
+      strncpy(spheaders.def_mem_per_cpu.line2, "GB/CPU",
+              spheaders.def_mem_per_cpu.column_width);
       def_mem_per_cpu = def_mem_per_cpu & (~MEM_PER_CPU);
+    } else {
+      strncpy(spheaders.def_mem_per_cpu.line2, "G/NODE",
+              spheaders.def_mem_per_cpu.column_width);
     }
-    else    
-    {
-      strncpy(spheaders.def_mem_per_cpu.line2, "G/NODE", spheaders.def_mem_per_cpu.column_width);
-    }    
-    spData[i].def_mem_per_cpu = (uint64_t) (def_mem_per_cpu/1000u);
-    if ((def_mem_per_cpu != default_def_mem_per_cpu) &&(spData[i].visible)) show_def_mem_per_cpu = 1;
+    spData[i].def_mem_per_cpu = (uint64_t)(def_mem_per_cpu / 1000u);
+    if ((def_mem_per_cpu != default_def_mem_per_cpu) && (spData[i].visible))
+      show_def_mem_per_cpu = 1;
 
-    max_mem_per_cpu =part_ptr->max_mem_per_cpu;
-    if (max_mem_per_cpu & MEM_PER_CPU)
-    {
-      strncpy(spheaders.max_mem_per_cpu.line2, "GB/CPU", spheaders.max_mem_per_cpu.column_width);
+    max_mem_per_cpu = part_ptr->max_mem_per_cpu;
+    if (max_mem_per_cpu & MEM_PER_CPU) {
+      strncpy(spheaders.max_mem_per_cpu.line2, "GB/CPU",
+              spheaders.max_mem_per_cpu.column_width);
       max_mem_per_cpu = max_mem_per_cpu & (~MEM_PER_CPU);
+    } else {
+      strncpy(spheaders.max_mem_per_cpu.line2, "G/NODE",
+              spheaders.max_mem_per_cpu.column_width);
     }
-    else    
-    {
-      strncpy(spheaders.max_mem_per_cpu.line2, "G/NODE", spheaders.max_mem_per_cpu.column_width);
-    }    
-    spData[i].max_mem_per_cpu = (uint64_t) (max_mem_per_cpu/1000u);
-    if ((max_mem_per_cpu != default_max_mem_per_cpu) &&(spData[i].visible)) show_max_mem_per_cpu = 1;
+    spData[i].max_mem_per_cpu = (uint64_t)(max_mem_per_cpu / 1000u);
+    if ((max_mem_per_cpu != default_max_mem_per_cpu) && (spData[i].visible))
+      show_max_mem_per_cpu = 1;
 
     spData[i].mjt_time = part_ptr->max_time;
-    if ((part_ptr->max_time != default_mjt_time) && (spData[i].visible)) show_mjt_time = 1;
+    if ((part_ptr->max_time != default_mjt_time) && (spData[i].visible))
+      show_mjt_time = 1;
     spData[i].mjt_day = part_ptr->max_time / 1440;
     spData[i].mjt_hour = (part_ptr->max_time - (spData[i].mjt_day * 1440)) / 60;
     spData[i].mjt_minute = part_ptr->max_time - (spData[i].mjt_day * 1440) -
                            (spData[i].mjt_hour * (uint16_t)60);
     spData[i].djt_time = part_ptr->default_time;
-    if ((part_ptr->default_time != default_mjt_time) && (part_ptr->default_time != part_ptr->max_time) && (spData[i].visible)) show_djt_time = 1;
+    if ((part_ptr->default_time != default_mjt_time) &&
+        (part_ptr->default_time != NO_VAL) &&
+        (part_ptr->default_time != part_ptr->max_time) && (spData[i].visible))
+      show_djt_time = 1;
     spData[i].djt_day = part_ptr->default_time / 1440;
-    spData[i].djt_hour = (part_ptr->default_time - (spData[i].djt_day * 1440)) / 60;
+    spData[i].djt_hour =
+        (part_ptr->default_time - (spData[i].djt_day * 1440)) / 60;
     spData[i].djt_minute = part_ptr->default_time - (spData[i].djt_day * 1440) -
                            (spData[i].djt_hour * (uint16_t)60);
     spData[i].min_core = min_cpu;
@@ -1326,7 +1341,6 @@ int main(int argc, char *argv[]) {
         show_qos = 1;
     } else
       strncpy(spData[i].partition_qos, "-", SPART_MAX_COLUMN_SIZE);
-
   }
 
   if (partname_lenght > spheaders.partition_name.column_width) {
