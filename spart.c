@@ -15,7 +15,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-/* for UHeM spesific settings */
+/* for UHeM-ITU-Turkey spesific settings */
 /* #define SPART_COMPILE_FOR_UHEM */
 
 /* #define SPART_SHOW_STATEMENT */
@@ -176,7 +176,7 @@ int spart_usage() {
 #ifdef SPART_COMPILE_FOR_UHEM
   printf("This is UHeM Version of the spart command.\n");
 #endif
-  printf("spart version 0.9.2\n\n");
+  printf("spart version 0.9.3\n\n");
   exit(1);
 }
 
@@ -482,10 +482,10 @@ void sp_headers_print(sp_headers_t *sph) {
   sp_column_header_print(line1, line2, &(sph->partition_status));
   sp_column_header_print(line1, line2, &(sph->free_cpu));
   sp_column_header_print(line1, line2, &(sph->total_cpu));
-  sp_column_header_print(line1, line2, &(sph->free_node));
-  sp_column_header_print(line1, line2, &(sph->total_node));
   sp_column_header_print(line1, line2, &(sph->waiting_resource));
   sp_column_header_print(line1, line2, &(sph->waiting_other));
+  sp_column_header_print(line1, line2, &(sph->free_node));
+  sp_column_header_print(line1, line2, &(sph->total_node));
   sp_column_header_print(line1, line2, &(sph->min_nodes));
   sp_column_header_print(line1, line2, &(sph->max_nodes));
   sp_column_header_print(line1, line2, &(sph->max_cpus_per_node));
@@ -620,14 +620,14 @@ void partition_print(spart_info_t *sp, sp_headers_t *sph, int show_max_mem) {
       con_print(sp->free_cpu, sph->free_cpu.column_width);
     if (sph->total_cpu.visible)
       con_print(sp->total_cpu, sph->total_cpu.column_width);
-    if (sph->free_node.visible)
-      con_print(sp->free_node, sph->free_node.column_width);
-    if (sph->total_cpu.visible)
-      con_print(sp->total_node, sph->total_cpu.column_width);
     if (sph->waiting_resource.visible)
       con_print(sp->waiting_resource, sph->waiting_resource.column_width);
     if (sph->waiting_other.visible)
       con_print(sp->waiting_other, sph->waiting_other.column_width);
+    if (sph->free_node.visible)
+      con_print(sp->free_node, sph->free_node.column_width);
+    if (sph->total_cpu.visible)
+      con_print(sp->total_node, sph->total_cpu.column_width);
     if (sph->min_nodes.visible)
       con_print(sp->min_nodes, sph->min_nodes.column_width);
     if (sph->max_nodes.visible) {

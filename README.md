@@ -14,16 +14,16 @@
 
 ```
  $ spart
-     QUEUE STA   FREE  TOTAL   FREE  TOTAL RESORC  OTHER   MIN    MAX MAXJOBTIME  CORES   NODE
- PARTITION TUS  CORES  CORES  NODES  NODES PENDNG PENDNG NODES  NODES  DAY-HR:MN  /NODE MEM-GB
-      defq   *    140   2436      5     87      0      0     1      -    7-00:00     28    126
-    shortq        196   2604      7     93      0      0     1      2    0-01:00     28    126
-     longq          0    336      0     14     24      0     1      -   21-00:00     24     62
-      gpuq         56    112      2      4      0      0     1      -    7-00:00     28    126
-   bigmemq         56    280      2     10      0      0     1      -    7-00:00     28    510
-     v100q          0     40      0      1      0      0     1      1    1-00:00     40    375
-     b224q        168   2548      6     91    672      0     8     40    1-00:00     28    126
-   core40q        280   1400      7     35      0      0     1      -    7-00:00     40    190
+     QUEUE STA   FREE  TOTAL RESORC  OTHER   FREE  TOTAL   MIN    MAX MAXJOBTIME  CORES   NODE
+ PARTITION TUS  CORES  CORES PENDNG PENDNG  NODES  NODES NODES  NODES  DAY-HR:MN  /NODE MEM-GB
+      defq   *    280   2436    400      0     10     87     1      -    7-00:00     28    126
+    shortq        420   2604      0      0     15     93     1      2    0-01:00     28    126
+     longq        336    336      0      0     14     14     1      -   21-00:00     24     62
+      gpuq         84    112      0      0      3      4     1      -    7-00:00     28    126
+   bigmemq        140    280      0      0      5     10     1      -    7-00:00     28    510
+     v100q         40     40      0      0      1      1     1      1    1-00:00     40    375
+     b224q        364   2548      0    280     13     91     8     40    1-00:00     28    126
+   core40q        400   1400      0      0     10     35     1      -    7-00:00     40    190
 
 ```
 
@@ -112,19 +112,19 @@ If you compare the output above with the output with -l parameter (below), unusa
  were not shown without -l parameter:
 ```
 $ spart -l
-     QUEUE STA   FREE  TOTAL   FREE  TOTAL RESORC  OTHER   MIN    MAX MAXCPU DEFMEM MAXMEM DEFJOBTIME MAXJOBTIME    CORES       NODE    QOS   GRES
- PARTITION TUS  CORES  CORES  NODES  NODES PENDNG PENDNG NODES  NODES  /NODE G/NODE G/NODE  DAY-HR:MN  DAY-HR:MN    /NODE     MEM-GB   NAME (COUNT)
-      defq   *    140   2436      5     87      0      0     1      -      -      -      -    7-00:00    7-00:00       28    126-510      -  -
-    shortq        196   2604      7     93      0      0     1      2      -      -      -    0-01:00    0-01:00       28    126-510      -  gpu:k20m:1(4)
-     longq          0    336      0     14     24      0     1      -      -      -      -   21-00:00   21-00:00       24         62      -  -
-      gpuq         56    112      2      4      0      0     1      -      -      -      -    7-00:00    7-00:00       28    126-510      -  gpu:k20m:1(4)
-   bigmemq         56    280      2     10      0      0     1      -      -      -      -    7-00:00    7-00:00       28        510      -  gpu:k20m:1(1)
-     v100q          0     40      0      1      0      0     1      1      -      -      -    1-00:00    1-00:00       40        375      -  gpu:v100:4(1)
-      yzmq   A      0     40      0      1      0      0     1      1      -      -      -    7-00:00    7-00:00       40        375      -  gpu:v100:4(1)
-     b224q        168   2548      6     91    672      0     8     40      -      -      -    1-00:00    1-00:00       28    126-510      -  gpu:k20m:1(2)
-   hbm513q   G     84   2240      3     80      0      0     1     10      -      -      -    0-00:30    0-00:30       28        126      -  -
-   core40q        280   1400      7     35      0      0     1      -      -      -      -    7-00:00    7-00:00       40        190      -  -
-       all   .    476   4380     14    143      0      0     1      -      -      -      -    1-00:00     -         24-40     62-510      -  gpu:k20m:1(4),gpu:v100:4(1)
+     QUEUE STA   FREE  TOTAL RESORC  OTHER   FREE  TOTAL   MIN    MAX MAXCPU DEFMEM MAXMEM DEFJOBTIME MAXJOBTIME    CORES       NODE    QOS   GRES
+ PARTITION TUS  CORES  CORES PENDNG PENDNG  NODES  NODES NODES  NODES  /NODE G/NODE G/NODE  DAY-HR:MN  DAY-HR:MN    /NODE     MEM-GB   NAME (COUNT)
+      defq   *    280   2436    400      0     10     87     1      -      -      -      -    7-00:00    7-00:00       28    126-510      -  -
+    shortq        420   2604      0      0     15     93     1      2      -      -      -    0-01:00    0-01:00       28    126-510      -  gpu:k20m:1(4)
+     longq        336    336      0      0     14     14     1      -      -      -      -   21-00:00   21-00:00       24         62      -  -
+      gpuq         84    112      0      0      3      4     1      -      -      -      -    7-00:00    7-00:00       28    126-510      -  gpu:k20m:1(4)
+   bigmemq        140    280      0      0      5     10     1      -      -      -      -    7-00:00    7-00:00       28        510      -  gpu:k20m:1(1)
+     v100q         40     40      0      0      1      1     1      1      -      -      -    1-00:00    1-00:00       40        375      -  gpu:v100:4(1)
+      yzmq   A     40     40      0      0      1      1     1      1      -      -      -    7-00:00    7-00:00       40        375      -  gpu:v100:4(1)
+     b224q        364   2548      0    280     13     91     8     40      -      -      -    1-00:00    1-00:00       28    126-510      -  gpu:k20m:1(2)
+   hbm513q   G    196   2240      0      0      7     80     1     10      -      -      -    0-00:30    0-00:30       28        126      -  -
+   core40q        400   1400      0      0     10     35     1      -      -      -      -    7-00:00    7-00:00       40        190      -  -
+       all   .   1196   4380      0      0     40    143     1      -      -      -      -    1-00:00     -         24-40     62-510      -  gpu:k20m:1(4),gpu:v100:4(1)
 
 ```
 
@@ -136,15 +136,16 @@ $ spart -i
  Your account(s): d0001 eoss1
  Your qos(s): normal
 
-     QUEUE STA   FREE  TOTAL   FREE  TOTAL RESORC  OTHER    MIN    MAX MAXJOBTIME  CORES   NODE
- PARTITION TUS  CORES  CORES  NODES  NODES PENDNG PENDNG  NODES  NODES  DAY-HR:MN  /NODE MEM-GB
-      defq   *    868   2436     31     87   1024      0      1      -    7-00:00     28    126
-    shortq        924   2604     33     93      0      0      1      2    0-01:00     28    126
-     longq        264    336     11     14      0      0      1      -   21-00:00     24     62
-      gpuq         56    112      2      4      0      0      1      -    7-00:00     28    126
-   bigmemq         56    280      2     10      0      0      1      -    7-00:00     28    510
-     b224q        896   2548     32     91      0      0      8     40    1-00:00     28    126
-   core40q         40   1400      1     35    444      0      1      -    7-00:00     40    190
+     QUEUE STA   FREE  TOTAL RESORC  OTHER   FREE  TOTAL   MIN    MAX MAXJOBTIME  CORES   NODE
+ PARTITION TUS  CORES  CORES PENDNG PENDNG  NODES  NODES NODES  NODES  DAY-HR:MN  /NODE MEM-GB
+      defq   *    280   2436    400      0     10     87     1      -    7-00:00     28    126
+    shortq        420   2604      0      0     15     93     1      2    0-01:00     28    126
+     longq        336    336      0      0     14     14     1      -   21-00:00     24     62
+      gpuq         84    112      0      0      3      4     1      -    7-00:00     28    126
+   bigmemq        140    280      0      0      5     10     1      -    7-00:00     28    510
+     v100q         40     40      0      0      1      1     1      1    1-00:00     40    375
+     b224q        364   2548      0    280     13     91     8     40    1-00:00     28    126
+   core40q        400   1400      0      0     10     35     1      -    7-00:00     40    190
 ```
 
 ## The Cluster and Partition Statements
@@ -161,17 +162,17 @@ The spart also can show the statements using different font sytles and backgroun
 
 For example, the output at the below shows the cluster statement file exist:
 ```
-spart
-     QUEUE STA   FREE  TOTAL   FREE  TOTAL RESORC  OTHER    MIN    MAX MAXJOBTIME  CORES   NODE
- PARTITION TUS  CORES  CORES  NODES  NODES PENDNG PENDNG  NODES  NODES  DAY-HR:MN  /NODE MEM-GB
-      defq   *    308   2436     11     87      0      0      1      -    7-00:00     28    126
-    shortq        392   2604     14     93      0      0      1      2    0-01:00     28    126
-     longq         96    336      4     14      0      0      1      -   21-00:00     24     62
-      gpuq         56    112      2      4      0      0      1      -    7-00:00     28    126
-   bigmemq         56    280      2     10      0      0      1      -    7-00:00     28    510
-     v100q         40     40      1      1      0      0      1      1    1-00:00     40    375
-     b224q        336   2548     12     91      0      0      8     40    1-00:00     28    126
-   core40q        160   1400      4     35      0      0      1      -    7-00:00     40    190
+$ spart
+     QUEUE STA   FREE  TOTAL RESORC  OTHER   FREE  TOTAL   MIN    MAX MAXJOBTIME  CORES   NODE
+ PARTITION TUS  CORES  CORES PENDNG PENDNG  NODES  NODES NODES  NODES  DAY-HR:MN  /NODE MEM-GB
+      defq   *    280   2436    400      0     10     87     1      -    7-00:00     28    126
+    shortq        420   2604      0      0     15     93     1      2    0-01:00     28    126
+     longq        336    336      0      0     14     14     1      -   21-00:00     24     62
+      gpuq         84    112      0      0      3      4     1      -    7-00:00     28    126
+   bigmemq        140    280      0      0      5     10     1      -    7-00:00     28    510
+     v100q         40     40      0      0      1      1     1      1    1-00:00     40    375
+     b224q        364   2548      0    280     13     91     8     40    1-00:00     28    126
+   core40q        400   1400      0      0     10     35     1      -    7-00:00     40    190
 
    ============================================================================================
    Dear Colleagues,
@@ -188,7 +189,7 @@ spart
 
 When the -i parameter was given, the spart also shows the contents of the partition statement files:
 ```
-spart -i
+$ spart -i
  Your username: mercan
  Your group(s): hsaat gaussian workshop ansys
  Your account(s): hsaat
@@ -245,6 +246,9 @@ spart -i
 
  Some features of the spart requires Slurm 18.08 or newer. With older versions, the spart works with
  reduced feature set i.e. without showing the federated clusters column and user-spesific output.
+
+ Also, the spart requires, the slurm configured to give permision for reading other users job info,
+ node info, and other information.
 
  
 ## Compiling
