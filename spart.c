@@ -15,7 +15,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-/* for UHeM-ITU-Turkey spesific settings */
+/* for UHeM-ITU-Turkey specific settings */
 /* #define SPART_COMPILE_FOR_UHEM */
 
 /* #define SPART_SHOW_STATEMENT */
@@ -176,7 +176,7 @@ int spart_usage() {
 #ifdef SPART_COMPILE_FOR_UHEM
   printf("This is UHeM Version of the spart command.\n");
 #endif
-  printf("spart version 0.9.3\n\n");
+  printf("spart version 0.9.4\n\n");
   exit(1);
 }
 
@@ -904,11 +904,23 @@ int main(int argc, char *argv[]) {
 #endif
 
   /* to check that can we read pending jobs info */
-  if (conf_info_msg_ptr->private_data & PRIVATE_DATA_JOBS) {
-    printf(
-        "WARNING: Because of the slurm settings have a restriction "
-        "to see the job information of the other users,\n"
-        "\tthe spart can not show other users' waiting jobs info!\n\n");
+  if (conf_info_msg_ptr->private_data != 0) {
+    printf("WARNING: The Slurm settings have info restrictions!\n");
+
+    /* to check that can we read pending jobs info */
+    if (conf_info_msg_ptr->private_data & PRIVATE_DATA_JOBS) {
+      printf("\tthe spart can not show other users' waiting jobs info!\n\n");
+    }
+
+    /* to check that can we read pending jobs info */
+    if (conf_info_msg_ptr->private_data & PRIVATE_DATA_NODES) {
+      printf("\tthe spart can not show node status info!\n\n");
+    }
+
+    /* to check that can we read pending jobs info */
+    if (conf_info_msg_ptr->private_data & PRIVATE_DATA_PARTITIONS) {
+      printf("\tthe spart can not show partition info!\n\n");
+    }
   }
 
 #if SLURM_VERSION_NUMBER > SLURM_VERSION_NUM(18, 7, 0)
@@ -1234,12 +1246,12 @@ int main(int argc, char *argv[]) {
       }
     }
 
-    if (!(part_ptr->state_up & PARTITION_UP)) {
-      if (part_ptr->state_up & PARTITION_INACTIVE)
+    if (!(part_ptr->state_up == PARTITION_UP)) {
+      if (part_ptr->state_up == PARTITION_INACTIVE)
         strncat(spData[i].partition_status, "C", SPART_MAX_COLUMN_SIZE);
-      if (part_ptr->state_up & PARTITION_DRAIN)
+      if (part_ptr->state_up == PARTITION_DRAIN)
         strncat(spData[i].partition_status, "S", SPART_MAX_COLUMN_SIZE);
-      if (part_ptr->state_up & PARTITION_DOWN)
+      if (part_ptr->state_up == PARTITION_DOWN)
         strncat(spData[i].partition_status, "D", SPART_MAX_COLUMN_SIZE);
     }
 
