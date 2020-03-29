@@ -6,7 +6,7 @@
 
 ## Usage
 
- **Usage: spart [-m] [-a] [-c] [-g] [-i] [-l] [-h]**
+ **Usage: spart [-m] [-a] [-c] [-g] [-i] [-t] [-l] [-h]**
 
  This program shows **the user specific brief partition info** with core count of available nodes and pending jobs. It hides unnecessary information for users in the output i.e. unusable partitions, undefined limits, unusable nodes etc., but it shows related and usefull information briefly.
 
@@ -58,11 +58,11 @@ WARNING: The Slurm settings have info restrictions!
 	D	open to the job submit, but the submitted jobs will not run,
 	R	open for only root, or closed to root (if you are root),
 	A	closed to all of your account(s),
-	a	closed to some of your account(s),
+	a	closed to some of your accounts,
 	G	closed to all of your group(s),
-	g	closed to some of your group(s),
+	g	closed to some of your groups,
 	Q	closed to all of your QOS(s),
-	q	closed to some of your QOS(s).
+	q	closed to some of your QOSs.
 ```
 
 The **RESOURCE PENDING** column shows core counts of pending jobs because of the busy resource.
@@ -126,6 +126,8 @@ Parameters:
 		containing that GRES.
 
  **-i** the info about the groups, accounts, QOSs, and queues will be shown.
+ 
+ **-t**	the time info will be shown at DAY-HR:MN format, instead of verbal format.
 
  **-l**	all posible columns will be shown, except the federated clusters column.
 
@@ -176,7 +178,7 @@ $ spart -i
 
 ## The Cluster and Partition Statements
 
-When STATEMENT feature is on the spart looks for the statements files. To open the STATEMENT 
+When STATEMENT feature is on, the spart looks for the statements files. To open the STATEMENT 
  feature, the **SPART_SHOW_STATEMENT** macro must be defined that can be achieved when you 
  uncomment line 21. If the spart finds any statement file, it shows the content of the files.
  If the spart can not find a particular staement file, simply ignore it without the notification.
