@@ -151,7 +151,8 @@ int spart_usage() {
   printf(
       "If the partition's QOS NAME, MIN NODES, MAX NODES, MAXCPU/NODE, "
       "DEFMEM GB/CPU|NODE,\n MAXMEM GB/CPU|NODE, DEFAULT JOB-TIME, and MAXIMUM "
-      "JOB-TIME limits are not setted for the\n all partitions in your cluster, "
+      "JOB-TIME limits are not setted for the\n all partitions in your "
+      "cluster, "
       "corresponding column(s) will not be shown, except -l\n parameter "
       "was given.\n\n");
   printf("Parameters:\n\n");
@@ -179,7 +180,7 @@ int spart_usage() {
 #ifdef SPART_COMPILE_FOR_UHEM
   printf("This is UHeM Version of the spart command.\n");
 #endif
-  printf("spart version 1.0.0\n\n");
+  printf("spart version 1.0.1\n\n");
   exit(1);
 }
 
@@ -752,7 +753,8 @@ int main(int argc, char *argv[]) {
   node_info_msg_t *node_buffer_ptr = NULL;
   job_info_msg_t *job_buffer_ptr = NULL;
 
-#if SLURM_VERSION_NUMBER > SLURM_VERSION_NUM(18, 7, 0)
+#if SLURM_VERSION_NUMBER > SLURM_VERSION_NUM(18, 7, 0) && \
+    SLURM_VERSION_NUMBER < SLURM_VERSION_NUM(20, 2, 0)
   void **db_conn = NULL;
   slurmdb_assoc_cond_t assoc_cond;
   List assoc_list = NULL;
@@ -969,7 +971,8 @@ int main(int argc, char *argv[]) {
     }
   }
 
-#if SLURM_VERSION_NUMBER > SLURM_VERSION_NUM(18, 7, 0)
+#if SLURM_VERSION_NUMBER > SLURM_VERSION_NUM(18, 7, 0) && \
+    SLURM_VERSION_NUMBER < SLURM_VERSION_NUM(20, 2, 0)
   /* Getting user account info */
   db_conn = slurmdb_connection_get();
   if (errno != SLURM_SUCCESS) {
@@ -1011,7 +1014,8 @@ int main(int argc, char *argv[]) {
     }
     printf("\n");
     printf(" Your account(s): ");
-#if SLURM_VERSION_NUMBER > SLURM_VERSION_NUM(18, 7, 0)
+#if SLURM_VERSION_NUMBER > SLURM_VERSION_NUM(18, 7, 0) && \
+    SLURM_VERSION_NUMBER < SLURM_VERSION_NUM(20, 2, 0)
     for (k = 0; k < user_acct_count; k++) {
       printf("%s ", user_acct[k]);
     }
@@ -1204,7 +1208,8 @@ int main(int argc, char *argv[]) {
     if (part_ptr->flags & PART_FLAG_HIDDEN)
       strncat(spData[i].partition_status, ".", SPART_MAX_COLUMN_SIZE);
 
-#if SLURM_VERSION_NUMBER > SLURM_VERSION_NUM(18, 7, 0)
+#if SLURM_VERSION_NUMBER > SLURM_VERSION_NUM(18, 7, 0) && \
+    SLURM_VERSION_NUMBER < SLURM_VERSION_NUM(20, 2, 0)
     if (part_ptr->allow_accounts != NULL) {
       strncpy(strtmp, part_ptr->allow_accounts, SPART_INFO_STRING_SIZE);
       tmp_lenght = sp_account_check(user_acct, user_acct_count, strtmp);
@@ -1483,7 +1488,8 @@ int main(int argc, char *argv[]) {
     pclose(fo);
   }
 #endif
-#if SLURM_VERSION_NUMBER > SLURM_VERSION_NUM(18, 7, 0)
+#if SLURM_VERSION_NUMBER > SLURM_VERSION_NUM(18, 7, 0) && \
+    SLURM_VERSION_NUMBER < SLURM_VERSION_NUM(20, 2, 0)
   /* free allocations */
   for (k = 0; k < user_acct_count; k++) {
     free(user_acct[k]);

@@ -274,6 +274,8 @@ $ spart -i
 
 Some features of the spart requires Slurm 18.08 or newer. With older versions, the spart works with
  reduced feature set i.e. without showing the federated clusters column and user-spesific output.
+ Also, with Slurm 20.02.X, the spart have a problem to connect the slurm database. Because of that,
+ the spart works with reduced feature set at this version, too.
 
 Also, the spart requires, the slurm configured to give permision for reading other users job info,
  node info, and other information.
@@ -287,7 +289,7 @@ If your slurm installed at default location, you can compile the spart command a
 
  ```gcc -lslurm -lslurmdb spart.c -o spart```
  
-At SLURM 19.05, you should compile without **-libslurmdb**:
+At SLURM 19.05 and later, you should compile without **-libslurmdb**:
  
  ```gcc -lslurm spart.c -o spart```
 
