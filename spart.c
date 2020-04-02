@@ -180,7 +180,7 @@ int spart_usage() {
 #ifdef SPART_COMPILE_FOR_UHEM
   printf("This is UHeM Version of the spart command.\n");
 #endif
-  printf("spart version 1.0.1\n\n");
+  printf("spart version 1.0.2\n\n");
   exit(1);
 }
 
@@ -1037,7 +1037,7 @@ int main(int argc, char *argv[]) {
   }
   snprintf(sh_str, SPART_INFO_STRING_SIZE,
            "sacctmgr list association format=qos%%-30 where user=%s -n "
-           "2>/dev/null |tr -s '\n,' ' '",
+           "2>/dev/null |tr -s '\n, ' ' '",
            user_name);
   fo = popen(sh_str, "r");
   if (fo) {
@@ -1053,8 +1053,8 @@ int main(int argc, char *argv[]) {
       if (re_str[j] == ' ') user_qos_count++;
 
     user_qos = malloc(user_qos_count * sizeof(char *));
-    for (p_str = strtok_r(re_str, ",", &t_str); p_str != NULL;
-         p_str = strtok_r(NULL, ",", &t_str)) {
+    for (p_str = strtok_r(re_str, " ", &t_str); p_str != NULL;
+         p_str = strtok_r(NULL, " ", &t_str)) {
       user_qos[k] = malloc(SPART_INFO_STRING_SIZE * sizeof(char));
       strncpy(user_qos[k], p_str, SPART_INFO_STRING_SIZE);
       k++;
@@ -1210,7 +1210,8 @@ int main(int argc, char *argv[]) {
 
 #if SLURM_VERSION_NUMBER > SLURM_VERSION_NUM(18, 7, 0) && \
     SLURM_VERSION_NUMBER < SLURM_VERSION_NUM(20, 2, 0)
-    if (part_ptr->allow_accounts != NULL) {
+    if ((part_ptr->allow_accounts != NULL) &&
+        (strlen(part_ptr->allow_accounts) != 0)) {
       strncpy(strtmp, part_ptr->allow_accounts, SPART_INFO_STRING_SIZE);
       tmp_lenght = sp_account_check(user_acct, user_acct_count, strtmp);
       if (tmp_lenght) {
@@ -1223,7 +1224,8 @@ int main(int argc, char *argv[]) {
       }
     }
 
-    if (part_ptr->deny_accounts != NULL) {
+    if ((part_ptr->deny_accounts != NULL) &&
+        (strlen(part_ptr->deny_accounts) != 0)) {
       strncpy(strtmp, part_ptr->deny_accounts, SPART_INFO_STRING_SIZE);
       tmp_lenght = sp_account_check(user_acct, user_acct_count, strtmp);
       if (tmp_lenght) {
@@ -1237,7 +1239,7 @@ int main(int argc, char *argv[]) {
       }
     }
 
-    if (part_ptr->allow_qos != NULL) {
+    if ((part_ptr->allow_qos != NULL) && (strlen(part_ptr->allow_qos) != 0)) {
       strncpy(strtmp, part_ptr->allow_qos, SPART_INFO_STRING_SIZE);
       tmp_lenght = sp_account_check(user_qos, user_qos_count, strtmp);
       if (tmp_lenght) {
@@ -1250,7 +1252,7 @@ int main(int argc, char *argv[]) {
       }
     }
 
-    if (part_ptr->deny_qos != NULL) {
+    if ((part_ptr->deny_qos != NULL) && (strlen(part_ptr->deny_qos) != 0)) {
       strncpy(strtmp, part_ptr->deny_qos, SPART_INFO_STRING_SIZE);
       tmp_lenght = sp_account_check(user_qos, user_qos_count, strtmp);
       if (tmp_lenght) {
@@ -1264,7 +1266,8 @@ int main(int argc, char *argv[]) {
       }
     }
 
-    if (part_ptr->allow_groups != NULL) {
+    if ((part_ptr->allow_groups != NULL) &&
+        (strlen(part_ptr->allow_groups) != 0)) {
       strncpy(strtmp, part_ptr->allow_groups, SPART_INFO_STRING_SIZE);
       tmp_lenght = sp_account_check(user_group, user_group_count, strtmp);
       if (tmp_lenght) {
