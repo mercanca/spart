@@ -155,6 +155,10 @@ int spart_usage() {
       "cluster, "
       "corresponding column(s) will not be shown, except -l\n parameter "
       "was given.\n\n");
+  printf(
+      "If the values of a column are same, this column will not be shown "
+      "at partitions block.\n These same values of that column will be show at "
+      "COMMON VALUES as a single value.\n\n");
   printf("Parameters:\n\n");
   printf(
       "\t-m\tboth the lowest and highest values will be shown in the CORES"
@@ -180,7 +184,7 @@ int spart_usage() {
 #ifdef SPART_COMPILE_FOR_UHEM
   printf("This is UHeM Version of the spart command.\n");
 #endif
-  printf("spart version 1.0.2\n\n");
+  printf("spart version 1.1.0\n\n");
   exit(1);
 }
 
@@ -296,6 +300,7 @@ typedef struct sp_column_header {
 
 /* To storing Output headers */
 typedef struct sp_headers {
+  sp_column_header_t hspace;
 #ifdef __slurmdb_cluster_rec_t_defined
   sp_column_header_t cluster_name;
 #endif
@@ -323,6 +328,12 @@ typedef struct sp_headers {
 
 /* Initialize all column headers */
 void sp_headers_set_defaults(sp_headers_t *sph) {
+  sph->hspace.visible = 0;
+  sph->hspace.column_width = 16;
+  strncpy(sph->hspace.line1, "           ",
+          sph->hspace.column_width);
+  strncpy(sph->hspace.line2, "           ",
+          sph->hspace.column_width);
 #ifdef __slurmdb_cluster_rec_t_defined
   sph->cluster_name.visible = 0;
   sph->cluster_name.column_width = 8;
@@ -473,6 +484,7 @@ void sp_headers_print(sp_headers_t *sph) {
   line1[0] = 0;
   line2[0] = 0;
 
+  sp_column_header_print(line1, line2, &(sph->hspace));
 #ifdef __slurmdb_cluster_rec_t_defined
   sp_column_header_print(line1, line2, &(sph->cluster_name));
 #endif
@@ -655,6 +667,8 @@ void partition_print(spart_info_t *sp, sp_headers_t *sph, int show_max_mem,
                      int show_as_date) {
   char mem_result[SPART_INFO_STRING_SIZE];
   if (sp->visible) {
+    if (sph->hspace.visible)
+      printf("%*s ", sph->hspace.column_width, "COMMON VALUES:");
 #ifdef __slurmdb_cluster_rec_t_defined
     if (sph->cluster_name.visible)
       printf("%*s ", sph->cluster_name.column_width, sp->cluster_name);
@@ -802,7 +816,7 @@ int main(int argc, char *argv[]) {
   int show_max_cpus_per_node = 0;
   int show_def_mem_per_cpu = 0;
   uint16_t show_partition = 0;
-  uint16_t show_qos = 0;
+  uint16_t show_partition_qos = 0;
   uint16_t show_min_nodes = 0;
   uint16_t show_max_nodes = 0;
   uint16_t show_mjt_time = 0;
@@ -811,6 +825,9 @@ int main(int argc, char *argv[]) {
   int show_gres = 0;
   int show_all_partition = 0;
   int show_as_date = 0;
+  int show_cluster_name = 0;
+  int show_min_mem_gb = 0;
+  int show_min_core = 0;
 
   uint16_t partname_lenght = 0;
 #ifdef __slurmdb_cluster_rec_t_defined
@@ -904,7 +921,7 @@ int main(int argc, char *argv[]) {
       sp_headers_set_parameter_L(&spheaders);
       show_max_mem = 1;
 #ifdef __slurmdb_cluster_rec_t_defined
-      show_partition |= (SHOW_FEDERATION | SHOW_ALL | SHOW_LOCAL);
+      show_partition |= (SHOW_FEDERATION | SHOW_ALL);
 #else
       show_partition |= SHOW_ALL;
 #endif
@@ -916,7 +933,7 @@ int main(int argc, char *argv[]) {
       show_def_mem_per_cpu = 1;
       show_mjt_time = 1;
       show_djt_time = 1;
-      show_qos = 1;
+      show_partition_qos = 1;
       show_parameter_L = 1;
       show_all_partition = 1;
       continue;
@@ -1389,7 +1406,7 @@ int main(int argc, char *argv[]) {
       strncpy(spData[i].partition_qos, part_ptr->qos_char,
               SPART_MAX_COLUMN_SIZE);
       if (strncmp(part_ptr->qos_char, default_qos, SPART_MAX_COLUMN_SIZE) != 0)
-        show_qos = 1;
+        show_partition_qos = 1;
     } else
       strncpy(spData[i].partition_qos, "-", SPART_MAX_COLUMN_SIZE);
   }
@@ -1441,7 +1458,7 @@ int main(int argc, char *argv[]) {
     spheaders.def_mem_per_cpu.visible = show_def_mem_per_cpu;
     spheaders.mjt_time.visible = show_mjt_time;
     spheaders.djt_time.visible = show_djt_time;
-    spheaders.partition_qos.visible = show_qos;
+    spheaders.partition_qos.visible = show_partition_qos;
   }
 
   if (show_all_partition) {
@@ -1449,6 +1466,246 @@ int main(int argc, char *argv[]) {
       spData[i].visible = 1;
     }
   }
+
+  /* Common Values scanning */
+  /* reuse local show_xxx variables for different purpose */
+  show_all_partition = 0; /* are there common feature */
+  k = -1;                 /* first visible row (partition) */
+  for (i = 0; i < partition_count; i++)
+    if ((spData[i].visible) && (k == -1)) {
+      k = i; /* first visible partition */
+    }
+
+  if (spheaders.min_nodes.visible) {/* is column visible */
+    show_min_nodes = 1;
+    for (i = 0; i < partition_count; i++) {
+      if (spData[i].visible) /* is row visible */
+      {
+        if (spData[i].min_nodes != spData[k].min_nodes) {
+          show_min_nodes = 0; /* it is not common */
+          break;
+        }
+      }
+    }
+    if (show_min_nodes == 1) {
+      show_all_partition = 1;
+      spheaders.min_nodes.visible = 0;
+    }
+  }
+
+  if (spheaders.max_nodes.visible) {/* is column visible */
+    show_max_nodes = 1;
+    for (i = 0; i < partition_count; i++) {
+      if (spData[i].visible) /* is row visible */
+      {
+        if (spData[i].max_nodes != spData[k].max_nodes) {
+          show_max_nodes = 0; /* it is not common */
+          break;
+        }
+      }
+    }
+    if (show_max_nodes == 1) {
+      show_all_partition = 1;
+      spheaders.max_nodes.visible = 0;
+    }
+  }
+
+  if (spheaders.def_mem_per_cpu.visible) {/* is column visible */
+    show_def_mem_per_cpu = 1;
+    for (i = 0; i < partition_count; i++) {
+      if (spData[i].visible) /* is row visible */
+      {
+        if (spData[i].def_mem_per_cpu != spData[k].def_mem_per_cpu) {
+          show_def_mem_per_cpu = 0; /* it is not common */
+          break;
+        }
+      }
+    }
+    if (show_def_mem_per_cpu == 1) {
+      show_all_partition = 1;
+      spheaders.def_mem_per_cpu.visible = 0;
+    }
+  }
+
+  if (spheaders.max_mem_per_cpu.visible) {/* is column visible */
+    show_max_mem_per_cpu = 1;
+    for (i = 0; i < partition_count; i++) {
+      if (spData[i].visible) /* is row visible */
+      {
+        if (spData[i].max_mem_per_cpu != spData[k].max_mem_per_cpu) {
+          show_max_mem_per_cpu = 0; /* it is not common */
+          break;
+        }
+      }
+    }
+    if (show_max_mem_per_cpu == 1) {
+      show_all_partition = 1;
+      spheaders.max_mem_per_cpu.visible = 0;
+    }
+  }
+
+  if (spheaders.max_cpus_per_node.visible) {/* is column visible */
+    show_max_cpus_per_node = 1;
+    for (i = 0; i < partition_count; i++) {
+      if (spData[i].visible) /* is row visible */
+      {
+        if (spData[i].max_cpus_per_node != spData[k].max_cpus_per_node) {
+          show_max_cpus_per_node = 0; /* it is not common */
+          break;
+        }
+      }
+    }
+    if (show_max_cpus_per_node == 1) {
+      show_all_partition = 1;
+      spheaders.max_cpus_per_node.visible = 0;
+    }
+  }
+
+  if (spheaders.mjt_time.visible) {/* is column visible */
+    show_mjt_time = 1;
+    for (i = 0; i < partition_count; i++) {
+      if (spData[i].visible) /* is row visible */
+      {
+        if (spData[i].mjt_time != spData[k].mjt_time) {
+          show_mjt_time = 0; /* it is not common */
+          break;
+        }
+      }
+    }
+    if (show_mjt_time == 1) {
+      show_all_partition = 1;
+      spheaders.mjt_time.visible = 0;
+    }
+  }
+
+  if (spheaders.djt_time.visible) {/* is column visible */
+    show_djt_time = 1;
+    for (i = 0; i < partition_count; i++) {
+      if (spData[i].visible) /* is row visible */
+      {
+        if (spData[i].djt_time != spData[k].djt_time) {
+          show_djt_time = 0; /* it is not common */
+          break;
+        }
+      }
+    }
+    if (show_djt_time == 1) {
+      show_all_partition = 1;
+      spheaders.djt_time.visible = 0;
+    }
+  }
+
+  if (spheaders.min_core.visible) {/* is column visible */
+    show_min_core = 1;
+    for (i = 0; i < partition_count; i++) {
+      if (spData[i].visible) /* is row visible */
+      {
+        if (spData[i].min_core != spData[k].min_core) {
+          show_min_core = 0; /* it is not common */
+          break;
+        }
+      }
+    }
+    /* is max_core visible */
+    if (show_max_mem) /* is column visible */
+      for (i = 0; i < partition_count; i++) {
+        if (spData[i].visible) /* is row visible */
+        {
+          if (spData[i].max_core != spData[k].max_core) {
+            show_min_core = 0; /* it is not common */
+            break;
+          }
+        }
+      }
+    if (show_min_core == 1) {
+      show_all_partition = 1;
+      spheaders.min_core.visible = 0;
+    }
+  }
+
+  if (spheaders.min_mem_gb.visible) {/* is column visible */
+    show_min_mem_gb = 1;
+    for (i = 0; i < partition_count; i++) {
+      if (spData[i].visible) /* is row visible */
+      {
+        if (spData[i].min_mem_gb != spData[k].min_mem_gb) {
+          show_min_mem_gb = 0; /* it is not common */
+          break;
+        }
+      }
+    }
+    /* is max_mem_gb visible */
+    if (show_max_mem) /* is column visible */
+      for (i = 0; i < partition_count; i++) {
+        if (spData[i].visible) /* is row visible */
+        {
+          if (spData[i].max_mem_gb != spData[k].max_mem_gb) {
+            show_min_core = 0; /* it is not common */
+            break;
+          }
+        }
+      }
+    if (show_min_mem_gb == 1) {
+      show_all_partition = 1;
+      spheaders.min_mem_gb.visible = 0;
+    }
+  }
+
+  if (spheaders.partition_qos.visible) {/* is column visible */
+    show_partition_qos = 1;
+    for (i = 0; i < partition_count; i++) {
+      if (spData[i].visible) /* is row visible */
+      {
+        if (strncmp(spData[i].partition_qos, spData[k].partition_qos,
+                    SPART_MAX_COLUMN_SIZE) != 0) {
+          show_partition_qos = 0; /* it is not common */
+          break;
+        }
+      }
+    }
+    if (show_partition_qos == 1) {
+      show_all_partition = 1;
+      spheaders.partition_qos.visible = 0;
+    }
+  }
+
+  if (spheaders.gres.visible) {/* is column visible */
+    show_gres = 1;
+    for (i = 0; i < partition_count; i++) {
+      if (spData[i].visible) /* is row visible */
+      {
+        if (strncmp(spData[i].gres, spData[k].gres,
+                    SPART_MAX_COLUMN_SIZE) != 0) {
+          show_gres = 0; /* it is not common */
+          break;
+        }
+      }
+    }
+    if (show_partition_qos == 1) {
+      show_all_partition = 1;
+      spheaders.partition_qos.visible = 0;
+    }
+  }
+
+#ifdef __slurmdb_cluster_rec_t_defined
+  if (spheaders.cluster_name.visible) {/* is column visible */
+    show_cluster_name = 1;
+    for (i = 0; i < partition_count; i++) {
+      if (spData[i].visible) /* is row visible */
+      {
+        if (strncmp(spData[i].cluster_name, spData[k].cluster_name,
+                    SPART_MAX_COLUMN_SIZE) != 0) {
+          show_cluster_name = 0; /* it is not common */
+          break;
+        }
+      }
+    }
+    if (show_cluster_name == 1) {
+      show_all_partition = 1;
+      spheaders.cluster_name.visible = 0;
+    }
+  }
+#endif
 
   /* Headers is printing */
   sp_headers_print(&spheaders);
@@ -1464,6 +1721,56 @@ int main(int argc, char *argv[]) {
   /* Output is printing */
   for (i = 0; i < partition_count; i++) {
     partition_print(&(spData[i]), &spheaders, show_max_mem, show_as_date);
+  }
+
+  /* Common values are printing */
+  if (show_all_partition) {
+    for (i = 0; i < partition_count; i++) {
+      spData[i].visible = 0;
+    }
+    spData[k].visible = 1;
+
+#ifdef __slurmdb_cluster_rec_t_defined
+    spheaders.cluster_name.visible = 0;
+#endif
+    spheaders.partition_name.visible = 0;
+    spheaders.partition_status.visible = 0;
+    spheaders.free_cpu.visible = 0;
+    spheaders.total_cpu.visible = 0;
+    spheaders.free_node.visible = 0;
+    spheaders.total_node.visible = 0;
+    spheaders.waiting_resource.visible = 0;
+    spheaders.waiting_other.visible = 0;
+    spheaders.min_nodes.visible = 0;
+    spheaders.max_nodes.visible = 0;
+    spheaders.max_cpus_per_node.visible = 0;
+    spheaders.max_mem_per_cpu.visible = 0;
+    spheaders.def_mem_per_cpu.visible = 0;
+    spheaders.djt_time.visible = 0;
+    spheaders.mjt_time.visible = 0;
+    spheaders.min_core.visible = 0;
+    spheaders.min_mem_gb.visible = 0;
+    spheaders.partition_qos.visible = 0;
+    spheaders.gres.visible = 0;
+
+    printf("\n");
+#ifdef __slurmdb_cluster_rec_t_defined
+    if (show_cluster_name) spheaders.cluster_name.visible=1;
+#endif
+    if (show_min_nodes) spheaders.min_nodes.visible = 1;
+    if (show_max_nodes) spheaders.max_nodes.visible = 1;
+    if (show_max_cpus_per_node) spheaders.max_cpus_per_node.visible = 1;
+    if (show_def_mem_per_cpu) spheaders.def_mem_per_cpu.visible = 1;
+    if (show_max_mem_per_cpu) spheaders.max_mem_per_cpu.visible = 1;
+    if (show_djt_time) spheaders.djt_time.visible = 1;
+    if (show_mjt_time) spheaders.mjt_time.visible = 1;
+    if (show_min_core) spheaders.min_core.visible = 1;
+    if (show_min_mem_gb) spheaders.min_mem_gb.visible = 1;
+    if (show_partition_qos) spheaders.partition_qos.visible = 1;
+    if (show_gres) spheaders.gres.visible = 1;
+    spheaders.hspace.visible=1;
+    sp_headers_print(&spheaders);
+    partition_print(&(spData[k]), &spheaders, show_max_mem, show_as_date);
   }
 
 #ifdef SPART_SHOW_STATEMENT

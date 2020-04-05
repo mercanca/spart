@@ -35,15 +35,19 @@ $ spart
 WARNING: The Slurm settings have info restrictions!
 	the spart can not show other users' waiting jobs info!
 
-        QUEUE STA   FREE  TOTAL RESORC  OTHER   FREE  TOTAL   MIN    MAX DEFMEM MAXMEM    DEFAULT    MAXIMUM  CORES   NODE    QOS
-    PARTITION TUS  CORES  CORES PENDNG PENDNG  NODES  NODES NODES  NODES GB/CPU G/NODE   JOB-TIME   JOB-TIME  /NODE MEM-GB   NAME
-     defaultq   *    295   2880      0      0      0    120     1      -      4    124     2 mins    15 days     24    128      -
-       single        110    144      0      0      3      6     1      -      9    252     2 mins    15 days     24    256      -
-          smp        184    224      0      0      0      1     1      -     17   4121     2 mins     8 days    224   4128      -
-        short        736   9172      0      0      0    278     1      -      8    252     2 mins     4 hour     24    256      -
-          mid        736   9172      0      0      0    278     1      -      8    252     2 mins     8 days     24    256      -
-         long        736   9172      0      0      0    278     1      -      8    252     2 mins    15 days     24    256      -
-        debug       1633  14532      0      0      8    461     1      4      8    252     2 mins    15 mins     24    128  debug
+        QUEUE STA   FREE  TOTAL RESORC  OTHER   FREE  TOTAL    MAX DEFMEM MAXMEM    MAXIMUM  CORES   NODE    QOS
+    PARTITION TUS  CORES  CORES PENDNG PENDNG  NODES  NODES  NODES GB/CPU G/NODE   JOB-TIME  /NODE MEM-GB   NAME
+     defaultq   *    295   2880      0      0      0    120      -      4    124    15 days     24    128      -
+       single        110    144      0      0      3      6      -      9    252    15 days     24    256      -
+          smp        184    224      0      0      0      1      -     17   4121     8 days    224   4128      -
+        short        736   9172      0      0      0    278      -      8    252     4 hour     24    256      -
+          mid        736   9172      0      0      0    278      -      8    252     8 days     24    256      -
+         long        736   9172      0      0      0    278      -      8    252    15 days     24    256      -
+        debug       1633  14532      0      0      8    461      4      8    252    15 mins     24    128  debug
+
+                   MIN    DEFAULT
+                 NODES   JOB-TIME
+  COMMON VALUES:     1     2 mins
 
 ```
 
@@ -112,6 +116,9 @@ If the partition's **QOS NAME, MIN NODES, MAX NODES, MAXCPU/NODE, DEFMEM GB/CPU|
  all partitions in your cluster, corresponding column(s) will not be shown, except -l
  parameter was given.
 
+If the values of a column are same, this column will not be shown at partitions block.
+ These same values of that column will be shown at COMMON VALUES as a single value.
+
 Parameters:
 
  **-m**	both the lowest and highest values will be shown in the **CORES /NODE**
@@ -137,21 +144,24 @@ If you compare the output above with the output with -l parameter (below), unusa
  were not shown without -l parameter:
 ```
 $ spart -l
-     QUEUE STA   FREE  TOTAL RESORC  OTHER   FREE  TOTAL   MIN    MAX MAXCPU DEFMEM MAXMEM    DEFAULT    MAXIMUM    CORES       NODE    QOS   GRES
- PARTITION TUS  CORES  CORES PENDNG PENDNG  NODES  NODES NODES  NODES  /NODE G/NODE G/NODE   JOB-TIME   JOB-TIME    /NODE     MEM-GB   NAME (COUNT)
-      defq   *      0   2436    532      0      0     87     1      -      -      -      -     7 days     7 days       28    126-510      - -
-    shortq          0   2604      0      0      0     93     1      2      -      -      -     1 hour     1 hour       28    126-510      - gpu:k20m:1(4)
-     longq         72    336      0      0      3     14     1      -      -      -      -    21 days    21 days       24         62      - -
-      gpuq          0    112      0      0      0      4     1      -      -      -      -     7 days     7 days       28    126-510      - gpu:k20m:1(4)
-   bigmemq          0    280      0      0      0     10     1      -      -      -      -     7 days     7 days       28        510      - gpu:k20m:1(1)
-     v100q          0     40      0      0      0      1     1      1      -      -      -     1 days     1 days       40        375      - gpu:v100:4(1)
-      yzmq   A      0     40     40      0      0      1     1      1      -      -      -     7 days     7 days       40        375      - gpu:v100:4(1)
-     b224q          0   2548    364      0      0     91     8     40      -      -      -     7 days     7 days       28    126-510      - gpu:k20m:1(2)
-   hbm513q   G      0   2240      0      0      0     80     1     10      -      -      -    30 mins    30 mins       28        126      - -
-   core40q   C      0   1400      0      0      0     35     1      -      -      -      -     7 days     7 days       40        190      - -
-   coronaq   g      0   1400      0   1400      0     35     1      -      -      -      -     7 days     7 days       40        190      - -
-       all   .     72   4380      0      0      3    143     1      -      -      -      -     1 days     -         24-40     62-510      - gpu:k20m:1(4),gpu:v100:4(1)
+     QUEUE STA   FREE  TOTAL RESORC  OTHER   FREE  TOTAL   MIN    MAX    DEFAULT    MAXIMUM    CORES       NODE   GRES
+ PARTITION TUS  CORES  CORES PENDNG PENDNG  NODES  NODES NODES  NODES   JOB-TIME   JOB-TIME    /NODE     MEM-GB (COUNT)
+      defq   *      0   2436    532      0      0     87     1      -     7 days     7 days       28    126-510 -
+    shortq          0   2604      0      0      0     93     1      2     1 hour     1 hour       28    126-510 gpu:k20m:1(4)
+     longq         72    336      0      0      3     14     1      -    21 days    21 days       24         62 -
+      gpuq          0    112      0      0      0      4     1      -     7 days     7 days       28    126-510 gpu:k20m:1(4)
+   bigmemq          0    280      0      0      0     10     1      -     7 days     7 days       28        510 gpu:k20m:1(1)
+     v100q          0     40      0      0      0      1     1      1     1 days     1 days       40        375 gpu:v100:4(1)
+      yzmq   A      0     40     40      0      0      1     1      1     7 days     7 days       40        375 gpu:v100:4(1)
+     b224q          0   2548    364      0      0     91     8     40     7 days     7 days       28    126-510 gpu:k20m:1(2)
+   hbm513q   G      0   2240      0      0      0     80     1     10    30 mins    30 mins       28        126 -
+   core40q   C      0   1400      0      0      0     35     1      -     7 days     7 days       40        190 -
+   coronaq   g      0   1400      0   1400      0     35     1      -     7 days     7 days       40        190 -
+       all   .     72   4380      0      0      3    143     1      -     1 days     -         24-40     62-510 gpu:k20m:1(4),gpu:v100:4(1)
 
+                 MAXCPU DEFMEM MAXMEM    QOS
+                  /NODE G/NODE G/NODE   NAME
+  COMMON VALUES:      -      -      -      -
 ```
 
 The output of the spart with the -i parameter:
@@ -274,10 +284,11 @@ $ spart -i
 
 Some features of the spart requires Slurm 18.08 or newer. With older versions, the spart works with
  reduced feature set i.e. without showing the federated clusters column and user-spesific output.
- Also, with Slurm 20.02.X, the spart have a problem to connect the slurm database. Because of that,
+
+Also, with Slurm 20.02.X, the spart have a problem to connect the slurm database. Because of that,
  the spart works with reduced feature set at this version, too.
 
-Also, the spart requires, the slurm configured to give permision for reading other users job info,
+The spart requires, the slurm configured to give permision for reading other users job info,
  node info, and other information.
 
  
