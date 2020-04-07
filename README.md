@@ -8,7 +8,7 @@
 
  **Usage: spart [-m] [-a] [-c] [-g] [-i] [-t] [-l] [-h]**
 
- This program shows **the user specific brief partition info** with core count of available nodes and pending jobs. It hides unnecessary information for users in the output i.e. unusable partitions, undefined limits, unusable nodes etc., but it shows related and usefull information briefly.
+ This program shows **the user specific brief partition info** with core count of available nodes and pending jobs. It hides unnecessary information for users in the output i.e. unusable partitions, undefined limits, unusable nodes etc., but it shows related and usefull information such as how many pending jobs waiting for the resourses or for the other reasons.
 
  The output of spart without any parameters is as below:
 
@@ -74,7 +74,7 @@ The **RESOURCE PENDING** column shows core counts of pending jobs because of the
 The **OTHER PENDING** column shows core counts of pending jobs because of the other reasons such
  as license or other limits.
 
-The MIN NODE and MAX NODE columns show the permitted minimum and maximum node counts of the
+The **MIN NODE** and **MAX NODE** columns show the permitted minimum and maximum node counts of the
  jobs which can be submited to the partition.
 
 The **MAXCPU/NODE** column shows the permitted maximum core counts of of the single node in
@@ -117,7 +117,7 @@ If the partition's **QOS NAME, MIN NODES, MAX NODES, MAXCPU/NODE, DEFMEM GB/CPU|
  parameter was given.
 
 If the values of a column are same, this column will not be shown at partitions block.
- These same values of that column will be shown at COMMON VALUES as a single value.
+ These same values of that column will be shown at **COMMON VALUES** as a single value.
 
 Parameters:
 
