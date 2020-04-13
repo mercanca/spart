@@ -6,9 +6,9 @@
 
 ## Usage
 
- **Usage: spart [-m] [-a] [-c] [-g] [-i] [-t] [-l] [-h]**
+ **Usage: spart [-m] [-a] [-c] [-g] [-i] [-t] [-f] [-J] [-l] [-h]**
 
- This program shows **the user specific brief partition info** with core count of available nodes and pending jobs. It hides unnecessary information for users in the output i.e. unusable partitions, undefined limits, unusable nodes etc., but it shows related and usefull information such as how many pending jobs waiting for the resourses or for the other reasons.
+ This program shows **the user specific partition info** with core count of available nodes and pending jobs. It hides unnecessary information for users in the output i.e. unusable partitions, undefined limits, unusable nodes etc., but it shows related and usefull information such as how many pending jobs waiting for the resourses or for the other reasons.
 
  The output of spart without any parameters is as below:
 
@@ -16,7 +16,7 @@
  $ spart
      QUEUE STA   FREE  TOTAL RESORC  OTHER   FREE  TOTAL |YOUR YOUR YOUR YOUR |   MIN   MAX    MAXIMUM  CORES   NODE
  PARTITION TUS  CORES  CORES PENDNG PENDNG  NODES  NODES | RUN PEND OTHR TOTL | NODES NODES   JOB-TIME  /NODE MEM-GB
-      defq   *     84   2436    140     28      3     87 |   3    5    0    9 |     1     -     7 days     28    126
+      defq   *     84   2436    140     28      3     87 |   3    5    0    8 |     1     -     7 days     28    126
     shortq         84   2604      0      0      3     93 |   0    0    0    0 |     1     2     1 hour     28    126
      longq        120    336      0    120      5     14 |   1    0    0    1 |     1     -    21 days     24     62
       gpuq          0    112      0      0      0      4 |   1    0    0    1 |     1     -     7 days     28    126
@@ -140,6 +140,9 @@ Parameters:
  **-t**	the time info will be shown at DAY-HR:MN format, instead of verbal format.
 
  **-J**	the output does not shown the info about the user's jobs.
+
+ **-f** the ouput shows each FEATURES defined in that partition and (in paranteses)
+		the total number of nodes in that partition containing that FEATURES.
 
  **-l**	all posible columns will be shown, except the federated clusters column.
 
