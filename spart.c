@@ -78,7 +78,7 @@ int spart_usage() {
 #ifdef __slurmdb_cluster_rec_t_defined
       "[-c] "
 #endif
-      "[-g] [-i] [-t] [-l] [-h]\n\n");
+      "[-g] [-i] [-t] [-f] [-l] [-J] [-h]\n\n");
   printf(
       "This program shows brief partition info with core count of available "
       "nodes and pending jobs.\n\n");
@@ -104,6 +104,12 @@ int spart_usage() {
   printf(
       "The OTHER PENDING column shows core counts of pending jobs because "
       "of the other reasons such\n as license or other limits.\n\n");
+  printf(
+      "The YOUR-RUN, YOUR-PEND, YOUR-OTHR, and YOUR-TOTL columns shows "
+      "the counts of the running,\n resource pending, other pending, and "
+      "total job count of the current user, respectively.\n If these four "
+      "columns are have same values, These same values of that four columns "
+      "will be\n shown at COMMON VALUES as four single values.\n\n");
   printf(
       "The MIN NODE and MAX NODE columns show the permitted minimum and "
       "maximum node counts of the\n jobs which can be submited to the "
@@ -152,9 +158,8 @@ int spart_usage() {
       "If the partition's QOS NAME, MIN NODES, MAX NODES, MAXCPU/NODE, "
       "DEFMEM GB/CPU|NODE,\n MAXMEM GB/CPU|NODE, DEFAULT JOB-TIME, and MAXIMUM "
       "JOB-TIME limits are not setted for the\n all partitions in your "
-      "cluster, "
-      "corresponding column(s) will not be shown, except -l\n parameter "
-      "was given.\n\n");
+      "cluster, corresponding column(s) will not be shown, except -l\n "
+      "parameter was given.\n\n");
   printf(
       "If the values of a column are same, this column will not be shown "
       "at partitions block.\n These same values of that column will be show at "
@@ -178,13 +183,18 @@ int spart_usage() {
       "\t-t\tthe time info will be shown at DAY-HR:MN format, instead of "
       "verbal format.\n\n");
   printf(
+      "\t-f\tthe ouput shows each FEATURES defined in that partition "
+      "and (in paranteses)\n\t\tthe total number of nodes in that "
+      "partition containing that FEATURES.\n\n");
+  printf("\t-J\tthe output does not shown the info about the user's jobs.\n\n");
+  printf(
       "\t-l\tall posible columns will be shown, except"
       " the federated clusters column.\n\n");
   printf("\t-h\tshows this usage text.\n\n");
 #ifdef SPART_COMPILE_FOR_UHEM
   printf("This is UHeM Version of the spart command.\n");
 #endif
-  printf("spart version 1.1.0\n\n");
+  printf("spart version 1.2.0\n\n");
   exit(1);
 }
 
@@ -213,12 +223,18 @@ typedef struct spart_info {
 #ifdef SPART_SHOW_STATEMENT
   uint16_t show_statement;
 #endif
+  uint32_t my_waiting_resource;
+  uint32_t my_waiting_other;
+  uint32_t my_running;
+  uint32_t my_total;
+
   char partition_name[SPART_MAX_COLUMN_SIZE];
 #ifdef __slurmdb_cluster_rec_t_defined
   char cluster_name[SPART_MAX_COLUMN_SIZE];
 #endif
   char partition_qos[SPART_MAX_COLUMN_SIZE];
   char gres[SPART_INFO_STRING_SIZE];
+  char features[SPART_INFO_STRING_SIZE];
   char partition_status[SPART_MAX_COLUMN_SIZE];
 } spart_info_t;
 
@@ -312,6 +328,10 @@ typedef struct sp_headers {
   sp_column_header_t total_node;
   sp_column_header_t waiting_resource;
   sp_column_header_t waiting_other;
+  sp_column_header_t my_running;
+  sp_column_header_t my_waiting_resource;
+  sp_column_header_t my_waiting_other;
+  sp_column_header_t my_total;
   sp_column_header_t min_nodes;
   sp_column_header_t max_nodes;
   sp_column_header_t max_cpus_per_node;
@@ -324,16 +344,15 @@ typedef struct sp_headers {
   sp_column_header_t min_mem_gb;
   sp_column_header_t partition_qos;
   sp_column_header_t gres;
+  sp_column_header_t features;
 } sp_headers_t;
 
 /* Initialize all column headers */
 void sp_headers_set_defaults(sp_headers_t *sph) {
   sph->hspace.visible = 0;
-  sph->hspace.column_width = 16;
-  strncpy(sph->hspace.line1, "           ",
-          sph->hspace.column_width);
-  strncpy(sph->hspace.line2, "           ",
-          sph->hspace.column_width);
+  sph->hspace.column_width = 17;
+  strncpy(sph->hspace.line1, "           ", sph->hspace.column_width);
+  strncpy(sph->hspace.line2, "           ", sph->hspace.column_width);
 #ifdef __slurmdb_cluster_rec_t_defined
   sph->cluster_name.visible = 0;
   sph->cluster_name.column_width = 8;
@@ -378,14 +397,34 @@ void sp_headers_set_defaults(sp_headers_t *sph) {
   sph->waiting_other.column_width = 6;
   strncpy(sph->waiting_other.line1, " OTHER", sph->waiting_other.column_width);
   strncpy(sph->waiting_other.line2, "PENDNG", sph->waiting_other.column_width);
+  sph->my_running.visible = 1;
+  sph->my_running.column_width = 4;
+  strncpy(sph->my_running.line1, "YOUR", sph->my_running.column_width);
+  strncpy(sph->my_running.line2, " RUN", sph->my_running.column_width);
+  sph->my_waiting_resource.visible = 1;
+  sph->my_waiting_resource.column_width = 4;
+  strncpy(sph->my_waiting_resource.line1, "YOUR",
+          sph->my_waiting_resource.column_width);
+  strncpy(sph->my_waiting_resource.line2, "PEND",
+          sph->my_waiting_resource.column_width);
+  sph->my_waiting_other.visible = 1;
+  sph->my_waiting_other.column_width = 4;
+  strncpy(sph->my_waiting_other.line1, "YOUR",
+          sph->my_waiting_other.column_width);
+  strncpy(sph->my_waiting_other.line2, "OTHR",
+          sph->my_waiting_other.column_width);
+  sph->my_total.visible = 1;
+  sph->my_total.column_width = 4;
+  strncpy(sph->my_total.line1, "YOUR", sph->my_total.column_width);
+  strncpy(sph->my_total.line2, "TOTL", sph->my_total.column_width);
   sph->min_nodes.visible = 1;
   sph->min_nodes.column_width = 5;
   strncpy(sph->min_nodes.line1, "  MIN", sph->min_nodes.column_width);
   strncpy(sph->min_nodes.line2, "NODES", sph->min_nodes.column_width);
   sph->max_nodes.visible = 1;
-  sph->max_nodes.column_width = 6;
-  strncpy(sph->max_nodes.line1, "   MAX", sph->max_nodes.column_width);
-  strncpy(sph->max_nodes.line2, " NODES", sph->max_nodes.column_width);
+  sph->max_nodes.column_width = 5;
+  strncpy(sph->max_nodes.line1, "  MAX", sph->max_nodes.column_width);
+  strncpy(sph->max_nodes.line2, "NODES", sph->max_nodes.column_width);
   sph->max_cpus_per_node.visible = 0;
   sph->max_cpus_per_node.column_width = 6;
   strncpy(sph->max_cpus_per_node.line1, "MAXCPU",
@@ -425,9 +464,13 @@ void sp_headers_set_defaults(sp_headers_t *sph) {
   strncpy(sph->partition_qos.line1, "   QOS", sph->partition_qos.column_width);
   strncpy(sph->partition_qos.line2, "  NAME", sph->partition_qos.column_width);
   sph->gres.visible = 0;
-  sph->gres.column_width = 8;
-  strncpy(sph->gres.line1, "  GRES  ", sph->gres.column_width);
-  strncpy(sph->gres.line2, "(COUNT) ", sph->gres.column_width);
+  sph->gres.column_width = 12;
+  strncpy(sph->gres.line1, " GRES       ", sph->gres.column_width);
+  strncpy(sph->gres.line2, "(NODE-COUNT)", sph->gres.column_width);
+  sph->features.visible = 0;
+  sph->features.column_width = 12;
+  strncpy(sph->features.line1, " FEATURES   ", sph->features.column_width);
+  strncpy(sph->features.line2, "(NODE-COUNT)", sph->features.column_width);
 }
 
 /* Sets all columns as visible */
@@ -445,6 +488,10 @@ void sp_headers_set_parameter_L(sp_headers_t *sph) {
   sph->total_node.visible = 1;
   sph->waiting_resource.visible = 1;
   sph->waiting_other.visible = 1;
+  sph->my_running.visible = 1;
+  sph->my_waiting_resource.visible = 1;
+  sph->my_waiting_other.visible = 1;
+  sph->my_total.visible = 1;
   sph->min_nodes.visible = 1;
   sph->max_nodes.visible = 1;
   sph->max_cpus_per_node.visible = 1;
@@ -456,6 +503,7 @@ void sp_headers_set_parameter_L(sp_headers_t *sph) {
   sph->min_mem_gb.visible = 1;
   sph->partition_qos.visible = 1;
   sph->gres.visible = 1;
+  sph->features.visible = 0;
   sph->min_core.column_width = 8;
   sph->min_mem_gb.column_width = 10;
 }
@@ -496,6 +544,18 @@ void sp_headers_print(sp_headers_t *sph) {
   sp_column_header_print(line1, line2, &(sph->waiting_other));
   sp_column_header_print(line1, line2, &(sph->free_node));
   sp_column_header_print(line1, line2, &(sph->total_node));
+  if (!(sph->hspace.visible)) {
+    strncat(line1, "|", SPART_INFO_STRING_SIZE);
+    strncat(line2, "|", SPART_INFO_STRING_SIZE);
+  }
+  sp_column_header_print(line1, line2, &(sph->my_running));
+  sp_column_header_print(line1, line2, &(sph->my_waiting_resource));
+  sp_column_header_print(line1, line2, &(sph->my_waiting_other));
+  sp_column_header_print(line1, line2, &(sph->my_total));
+  if (!(sph->hspace.visible)) {
+    strncat(line1, "| ", SPART_INFO_STRING_SIZE);
+    strncat(line2, "| ", SPART_INFO_STRING_SIZE);
+  }
   sp_column_header_print(line1, line2, &(sph->min_nodes));
   sp_column_header_print(line1, line2, &(sph->max_nodes));
   sp_column_header_print(line1, line2, &(sph->max_cpus_per_node));
@@ -507,6 +567,7 @@ void sp_headers_print(sp_headers_t *sph) {
   sp_column_header_print(line1, line2, &(sph->min_mem_gb));
   sp_column_header_print(line1, line2, &(sph->partition_qos));
   sp_column_header_print(line1, line2, &(sph->gres));
+  sp_column_header_print(line1, line2, &(sph->features));
   printf("%s\n%s\n", line1, line2);
 }
 
@@ -630,8 +691,15 @@ void con_strprint(char *str, uint16_t size, uint32_t num) {
   }
 }
 
+/* Prints a horizontal separetor such as ======= */
+void seperator_print(const char ch, const int count) {
+  int x;
+  for (x = 0; x < count; x++) printf("%c", ch);
+}
+
 #ifdef SPART_SHOW_STATEMENT
-void statement_print(const char *stfile, const char *stpartition) {
+void statement_print(const char *stfile, const char *stpartition,
+                     const int total_width) {
 
   char re_str[SPART_INFO_STRING_SIZE];
   FILE *fo;
@@ -649,22 +717,21 @@ void statement_print(const char *stfile, const char *stpartition) {
       printf("  %s %-*s %s\n", SPART_STATEMENT_QUEUE_LINEPRE, 92 + m, re_str,
              SPART_STATEMENT_QUEUE_LINEPOST);
     }
-    printf("  %s %-91s %s\n\n", SPART_STATEMENT_QUEUE_LINEPRE,
-           "------------------------------------------------------------------"
-           "--------------------------",
-           SPART_STATEMENT_QUEUE_LINEPOST);
+    printf("  %s ", SPART_STATEMENT_QUEUE_LINEPRE);
+    seperator_print('-', total_width);
+    printf(" %s\n\n", SPART_STATEMENT_QUEUE_LINEPOST);
     pclose(fo);
-  } else
-    printf("  %s %-91s %s\n", SPART_STATEMENT_QUEUE_LINEPRE,
-           "------------------------------------------------------------------"
-           "--------------------------",
-           SPART_STATEMENT_QUEUE_LINEPOST);
+  } else {
+    printf("  %s ", SPART_STATEMENT_QUEUE_LINEPRE);
+    seperator_print('-', total_width);
+    printf(" %s\n", SPART_STATEMENT_QUEUE_LINEPOST);
+  }
 }
 #endif
 
 /* Prints a partition info */
 void partition_print(spart_info_t *sp, sp_headers_t *sph, int show_max_mem,
-                     int show_as_date) {
+                     int show_as_date, int total_width) {
   char mem_result[SPART_INFO_STRING_SIZE];
   if (sp->visible) {
     if (sph->hspace.visible)
@@ -689,29 +756,39 @@ void partition_print(spart_info_t *sp, sp_headers_t *sph, int show_max_mem,
       con_print(sp->free_node, sph->free_node.column_width);
     if (sph->total_cpu.visible)
       con_print(sp->total_node, sph->total_cpu.column_width);
+    if (!(sph->hspace.visible)) printf("|");
+    if (sph->my_running.visible)
+      con_print(sp->my_running, sph->my_running.column_width);
+    if (sph->my_waiting_resource.visible)
+      con_print(sp->my_waiting_resource, sph->my_waiting_resource.column_width);
+    if (sph->my_waiting_other.visible)
+      con_print(sp->my_waiting_other, sph->my_waiting_other.column_width);
+    if (sph->my_total.visible)
+      con_print(sp->my_total, sph->my_total.column_width);
+    if (!(sph->hspace.visible)) printf("| ");
     if (sph->min_nodes.visible)
       con_print(sp->min_nodes, sph->min_nodes.column_width);
     if (sph->max_nodes.visible) {
       if (sp->max_nodes == UINT_MAX)
-        printf("     - ");
+        printf("%*s ", sph->max_nodes.column_width, "-");
       else
         con_print(sp->max_nodes, sph->max_nodes.column_width);
     }
     if (sph->max_cpus_per_node.visible) {
       if ((sp->max_cpus_per_node == UINT_MAX) || (sp->max_cpus_per_node == 0))
-        printf("     - ");
+        printf("%*s ", sph->max_cpus_per_node.column_width, "-");
       else
         con_print(sp->max_cpus_per_node, sph->max_cpus_per_node.column_width);
     }
     if (sph->def_mem_per_cpu.visible) {
       if ((sp->def_mem_per_cpu == UINT_MAX) || (sp->def_mem_per_cpu == 0))
-        printf("     - ");
+        printf("%*s ", sph->def_mem_per_cpu.column_width, "-");
       else
         con_print(sp->def_mem_per_cpu, sph->def_mem_per_cpu.column_width);
     }
     if (sph->max_mem_per_cpu.visible) {
       if ((sp->max_mem_per_cpu == UINT_MAX) || (sp->max_mem_per_cpu == 0))
-        printf("     - ");
+        printf("%*s ", sph->max_mem_per_cpu.column_width, "-");
       else
         con_print(sp->max_mem_per_cpu, sph->max_mem_per_cpu.column_width);
     }
@@ -742,14 +819,15 @@ void partition_print(spart_info_t *sp, sp_headers_t *sph, int show_max_mem,
     if (sph->partition_qos.visible)
       printf("%*s ", sph->partition_qos.column_width, sp->partition_qos);
 
-    if (sph->gres.visible) printf("%s ", sp->gres);
+    if (sph->gres.visible) printf("%-*s ",sph->gres.column_width, sp->gres);
+    if (sph->features.visible) printf("%-*s ",sph->features.column_width, sp->features);
     printf("\n");
 #ifdef SPART_SHOW_STATEMENT
-    if (sp->show_statement) {
+    if (sp->show_statement && !(sph->hspace.visible)) {
       snprintf(mem_result, SPART_INFO_STRING_SIZE, "%s%s%s%s",
                SPART_STATEMENT_DIR, SPART_STATEMENT_QUEPRE, sp->partition_name,
                SPART_STATEMENT_QUEPOST);
-      statement_print(mem_result, sp->partition_name);
+      statement_print(mem_result, sp->partition_name, total_width);
     }
 #endif
   }
@@ -759,6 +837,7 @@ void partition_print(spart_info_t *sp, sp_headers_t *sph, int show_max_mem,
 int main(int argc, char *argv[]) {
   uint32_t i, j;
   int k, m;
+  int total_width = 0;
 
   /* Slurm defined types */
   slurm_ctl_conf_t *conf_info_msg_ptr = NULL;
@@ -801,6 +880,7 @@ int main(int argc, char *argv[]) {
   char mem_result[SPART_INFO_STRING_SIZE];
   char strtmp[SPART_INFO_STRING_SIZE];
   char user_name[SPART_INFO_STRING_SIZE];
+  int user_id;
 #ifdef __slurmdb_cluster_rec_t_defined
   char cluster_name[SPART_INFO_STRING_SIZE];
 #endif
@@ -823,11 +903,16 @@ int main(int argc, char *argv[]) {
   uint16_t show_djt_time = 0;
   int show_parameter_L = 0;
   int show_gres = 0;
+  int show_features = 0;
   int show_all_partition = 0;
   int show_as_date = 0;
   int show_cluster_name = 0;
   int show_min_mem_gb = 0;
   int show_min_core = 0;
+  int show_my_running = 1;
+  int show_my_waiting_resource = 1;
+  int show_my_waiting_other = 1;
+  int show_my_total = 1;
 
   uint16_t partname_lenght = 0;
 #ifdef __slurmdb_cluster_rec_t_defined
@@ -843,6 +928,9 @@ int main(int argc, char *argv[]) {
   uint16_t sp_gres_count = 0;
   sp_gres_info_t spgres[SPART_GRES_ARRAY_SIZE];
 
+  uint16_t sp_features_count = 0;
+  sp_gres_info_t spfeatures[SPART_GRES_ARRAY_SIZE];
+
   sp_headers_t spheaders;
 
   int show_info = 0;
@@ -853,6 +941,7 @@ int main(int argc, char *argv[]) {
 
   pw = getpwuid(geteuid());
   strncpy(user_name, pw->pw_name, SPART_INFO_STRING_SIZE);
+  user_id = pw->pw_uid;
 
   groupIDs = malloc(user_group_count * sizeof(gid_t));
   if (groupIDs == NULL) {
@@ -906,6 +995,10 @@ int main(int argc, char *argv[]) {
       spheaders.gres.visible = 1;
       continue;
     }
+    if (strncmp(argv[k], "-f", 3) == 0) {
+      spheaders.features.visible = 1;
+      continue;
+    }
 
     if (strncmp(argv[k], "-i", 3) == 0) {
       show_info = 1;
@@ -914,6 +1007,14 @@ int main(int argc, char *argv[]) {
 
     if (strncmp(argv[k], "-t", 3) == 0) {
       show_as_date = 1;
+      continue;
+    }
+
+    if (strncmp(argv[k], "-J", 3) == 0) {
+      show_my_running = 0;
+      show_my_waiting_resource = 0;
+      show_my_waiting_other = 0;
+      show_my_total = 0;
       continue;
     }
 
@@ -1108,6 +1209,10 @@ int main(int argc, char *argv[]) {
     spData[i].max_core = 0;
     spData[i].min_mem_gb = 0;
     spData[i].max_mem_gb = 0;
+    spData[i].my_waiting_resource = 0;
+    spData[i].my_waiting_other = 0;
+    spData[i].my_running = 0;
+    spData[i].my_total = 0;
     spData[i].visible = 1;
 /* partition_name[] */
 #ifdef __slurmdb_cluster_rec_t_defined
@@ -1137,16 +1242,28 @@ int main(int argc, char *argv[]) {
       if (strstr(job_parts_str, partition_str) != NULL) {
         if (job_buffer_ptr->job_array[i].job_state == JOB_PENDING) {
           if ((job_buffer_ptr->job_array[i].state_reason == WAIT_RESOURCES) ||
-              (job_buffer_ptr->job_array[i].state_reason == WAIT_PRIORITY))
+              (job_buffer_ptr->job_array[i].state_reason == WAIT_PRIORITY)) {
             spData[j].waiting_resource += job_buffer_ptr->job_array[i].num_cpus;
-          else
+            if (job_buffer_ptr->job_array[i].user_id == user_id)
+              spData[j].my_waiting_resource++;
+          } else {
             spData[j].waiting_other += job_buffer_ptr->job_array[i].num_cpus;
+            if (job_buffer_ptr->job_array[i].user_id == user_id)
+              spData[j].my_waiting_other++;
+          }
+        } else {
+          if ((job_buffer_ptr->job_array[i].user_id == user_id) &&
+              (job_buffer_ptr->job_array[i].job_state == JOB_RUNNING))
+            spData[j].my_running++;
         }
+        if (job_buffer_ptr->job_array[i].user_id == user_id)
+          spData[j].my_total++;
       }
     }
   }
 
   show_gres = spheaders.gres.visible;
+  show_features = spheaders.features.visible;
   for (i = 0; i < partition_count; i++) {
     part_ptr = &part_buffer_ptr->partition_array[i];
 
@@ -1161,6 +1278,7 @@ int main(int argc, char *argv[]) {
     def_mem_per_cpu = 0;
 
     sp_gres_reset_counts(spgres, &sp_gres_count);
+    sp_gres_reset_counts(spfeatures, &sp_features_count);
 
     for (j = 0; part_ptr->node_inx; j += 2) {
       if (part_ptr->node_inx[j] == -1) break;
@@ -1183,6 +1301,15 @@ int main(int argc, char *argv[]) {
                       node_buffer_ptr->node_array[k].gres);
         }
 
+        /* If features will not show, don't work */
+        if (show_features) {
+          if (node_buffer_ptr->node_array[k].features_act != NULL)
+            sp_gres_add(spfeatures, &sp_features_count,
+                        node_buffer_ptr->node_array[k].features_act);
+          else if (node_buffer_ptr->node_array[k].features != NULL)
+            sp_gres_add(spfeatures, &sp_features_count,
+                        node_buffer_ptr->node_array[k].features);
+        }
 #ifdef SPART_COMPILE_FOR_UHEM
         reason = node_buffer_ptr->node_array[k].reason;
 #endif
@@ -1326,7 +1453,7 @@ int main(int argc, char *argv[]) {
     /* if (part_ptr->flags & PART_FLAG_EXCLUSIVE_USER)
       strncat(spData[i].partition_status, "x", SPART_MAX_COLUMN_SIZE);*/
 
-    /* spgre (GRES) data converting to string */
+    /* spgres (GRES) data converting to string */
     if (sp_gres_count == 0) {
       strncpy(spData[i].gres, "-", SPART_INFO_STRING_SIZE);
     } else {
@@ -1342,11 +1469,28 @@ int main(int argc, char *argv[]) {
       }
     }
 
+    /* spfeatures data converting to string */
+    if (sp_features_count == 0) {
+      strncpy(spData[i].features, "-", SPART_INFO_STRING_SIZE);
+    } else {
+      con_strprint(strtmp, SPART_INFO_STRING_SIZE, spfeatures[0].count);
+      snprintf(mem_result, SPART_INFO_STRING_SIZE, "%s(%s)",
+               spfeatures[0].gres_name, strtmp);
+      strncpy(spData[i].features, mem_result, SPART_INFO_STRING_SIZE);
+      for (j = 1; j < sp_features_count; j++) {
+        con_strprint(strtmp, SPART_INFO_STRING_SIZE, spfeatures[j].count);
+        snprintf(mem_result, SPART_INFO_STRING_SIZE, ",%s(%s)",
+                 spfeatures[j].gres_name, strtmp);
+        strncat(spData[i].features, mem_result, SPART_INFO_STRING_SIZE);
+      }
+    }
+
     spData[i].free_cpu = free_cpu;
     spData[i].total_cpu = part_ptr->total_cpus;
     spData[i].free_node = free_node;
     spData[i].total_node = part_ptr->total_nodes;
-    /* spData[i].waiting_resource and spData[i].waiting_other previously set */
+    /* spData[i].waiting_resource and spData[i].waiting_other previously set
+     */
     spData[i].min_nodes = part_ptr->min_nodes;
     if ((part_ptr->min_nodes != default_min_nodes) && (spData[i].visible))
       show_min_nodes = 1;
@@ -1460,12 +1604,27 @@ int main(int argc, char *argv[]) {
     spheaders.djt_time.visible = show_djt_time;
     spheaders.partition_qos.visible = show_partition_qos;
   }
+  spheaders.my_running.visible = show_my_running;
+  spheaders.my_waiting_resource.visible = show_my_waiting_resource;
+  spheaders.my_waiting_other.visible = show_my_waiting_other;
+  spheaders.my_total.visible = show_my_total;
 
   if (show_all_partition) {
     for (i = 0; i < partition_count; i++) {
       spData[i].visible = 1;
     }
   }
+
+  /* Output width calculation */
+  total_width = 7; /* for || and space charecters */
+  total_width += spheaders.partition_name.column_width;
+  total_width += spheaders.partition_status.column_width;
+  total_width += spheaders.free_cpu.column_width;
+  total_width += spheaders.total_cpu.column_width;
+  total_width += spheaders.free_node.column_width;
+  total_width += spheaders.total_node.column_width;
+  total_width += spheaders.waiting_resource.column_width;
+  total_width += spheaders.waiting_other.column_width;
 
   /* Common Values scanning */
   /* reuse local show_xxx variables for different purpose */
@@ -1475,6 +1634,70 @@ int main(int argc, char *argv[]) {
     if ((spData[i].visible) && (k == -1)) {
       k = i; /* first visible partition */
     }
+
+  if (spheaders.my_running.visible) {/* is column visible */
+    show_my_running = 1;
+    for (i = 0; i < partition_count; i++) {
+      if (spData[i].visible) /* is row visible */
+      {
+        if (spData[i].my_running != spData[k].my_running) {
+          show_my_running = 0; /* it is not common */
+          break;
+        }
+      }
+    }
+  }
+
+  if (spheaders.my_waiting_resource.visible) {/* is column visible */
+    show_my_waiting_resource = 1;
+    for (i = 0; i < partition_count; i++) {
+      if (spData[i].visible) /* is row visible */
+      {
+        if (spData[i].my_waiting_resource != spData[k].my_waiting_resource) {
+          show_my_waiting_resource = 0; /* it is not common */
+          break;
+        }
+      }
+    }
+  }
+
+  if (spheaders.my_waiting_other.visible) {/* is column visible */
+    show_my_waiting_other = 1;
+    for (i = 0; i < partition_count; i++) {
+      if (spData[i].visible) /* is row visible */
+      {
+        if (spData[i].my_waiting_other != spData[k].my_waiting_other) {
+          show_my_waiting_other = 0; /* it is not common */
+          break;
+        }
+      }
+    }
+  }
+
+  if (spheaders.my_total.visible) {/* is column visible */
+    show_my_total = 1;
+    for (i = 0; i < partition_count; i++) {
+      if (spData[i].visible) /* is row visible */
+      {
+        if (spData[i].my_total != spData[k].my_total) {
+          show_my_total = 0; /* it is not common */
+          break;
+        }
+      }
+    }
+    if (show_my_waiting_resource && show_my_waiting_other && show_my_running &&
+        show_my_total) {
+      show_all_partition = 1;
+      spheaders.my_running.visible = 0;
+      spheaders.my_waiting_resource.visible = 0;
+      spheaders.my_waiting_other.visible = 0;
+      spheaders.my_total.visible = 0;
+    } else
+      total_width += spheaders.my_running.column_width +
+                     spheaders.my_waiting_resource.column_width +
+                     spheaders.my_waiting_other.column_width +
+                     spheaders.my_total.column_width + 4;
+  }
 
   if (spheaders.min_nodes.visible) {/* is column visible */
     show_min_nodes = 1;
@@ -1490,7 +1713,8 @@ int main(int argc, char *argv[]) {
     if (show_min_nodes == 1) {
       show_all_partition = 1;
       spheaders.min_nodes.visible = 0;
-    }
+    } else
+      total_width += spheaders.min_nodes.column_width + 1;
   }
 
   if (spheaders.max_nodes.visible) {/* is column visible */
@@ -1507,7 +1731,8 @@ int main(int argc, char *argv[]) {
     if (show_max_nodes == 1) {
       show_all_partition = 1;
       spheaders.max_nodes.visible = 0;
-    }
+    } else
+      total_width += spheaders.max_nodes.column_width + 1;
   }
 
   if (spheaders.def_mem_per_cpu.visible) {/* is column visible */
@@ -1524,7 +1749,8 @@ int main(int argc, char *argv[]) {
     if (show_def_mem_per_cpu == 1) {
       show_all_partition = 1;
       spheaders.def_mem_per_cpu.visible = 0;
-    }
+    } else
+      total_width += spheaders.def_mem_per_cpu.column_width + 1;
   }
 
   if (spheaders.max_mem_per_cpu.visible) {/* is column visible */
@@ -1541,7 +1767,8 @@ int main(int argc, char *argv[]) {
     if (show_max_mem_per_cpu == 1) {
       show_all_partition = 1;
       spheaders.max_mem_per_cpu.visible = 0;
-    }
+    } else
+      total_width += spheaders.max_mem_per_cpu.column_width + 1;
   }
 
   if (spheaders.max_cpus_per_node.visible) {/* is column visible */
@@ -1558,7 +1785,8 @@ int main(int argc, char *argv[]) {
     if (show_max_cpus_per_node == 1) {
       show_all_partition = 1;
       spheaders.max_cpus_per_node.visible = 0;
-    }
+    } else
+      total_width += spheaders.max_cpus_per_node.column_width + 1;
   }
 
   if (spheaders.mjt_time.visible) {/* is column visible */
@@ -1575,7 +1803,8 @@ int main(int argc, char *argv[]) {
     if (show_mjt_time == 1) {
       show_all_partition = 1;
       spheaders.mjt_time.visible = 0;
-    }
+    } else
+      total_width += spheaders.mjt_time.column_width + 1;
   }
 
   if (spheaders.djt_time.visible) {/* is column visible */
@@ -1592,7 +1821,8 @@ int main(int argc, char *argv[]) {
     if (show_djt_time == 1) {
       show_all_partition = 1;
       spheaders.djt_time.visible = 0;
-    }
+    } else
+      total_width += spheaders.djt_time.column_width + 1;
   }
 
   if (spheaders.min_core.visible) {/* is column visible */
@@ -1620,7 +1850,8 @@ int main(int argc, char *argv[]) {
     if (show_min_core == 1) {
       show_all_partition = 1;
       spheaders.min_core.visible = 0;
-    }
+    } else
+      total_width += spheaders.min_core.column_width + 1;
   }
 
   if (spheaders.min_mem_gb.visible) {/* is column visible */
@@ -1648,7 +1879,8 @@ int main(int argc, char *argv[]) {
     if (show_min_mem_gb == 1) {
       show_all_partition = 1;
       spheaders.min_mem_gb.visible = 0;
-    }
+    } else
+      total_width += spheaders.min_mem_gb.column_width + 1;
   }
 
   if (spheaders.partition_qos.visible) {/* is column visible */
@@ -1666,7 +1898,8 @@ int main(int argc, char *argv[]) {
     if (show_partition_qos == 1) {
       show_all_partition = 1;
       spheaders.partition_qos.visible = 0;
-    }
+    } else
+      total_width += spheaders.partition_qos.column_width + 1;
   }
 
   if (spheaders.gres.visible) {/* is column visible */
@@ -1674,17 +1907,37 @@ int main(int argc, char *argv[]) {
     for (i = 0; i < partition_count; i++) {
       if (spData[i].visible) /* is row visible */
       {
-        if (strncmp(spData[i].gres, spData[k].gres,
-                    SPART_MAX_COLUMN_SIZE) != 0) {
+        if (strncmp(spData[i].gres, spData[k].gres, SPART_MAX_COLUMN_SIZE) !=
+            0) {
           show_gres = 0; /* it is not common */
           break;
         }
       }
     }
-    if (show_partition_qos == 1) {
+    if (show_gres == 1) {
       show_all_partition = 1;
-      spheaders.partition_qos.visible = 0;
+      spheaders.gres.visible = 0;
+    } else
+      total_width += spheaders.gres.column_width + 1;
+  }
+
+  if (spheaders.features.visible) {/* is column visible */
+    show_features = 1;
+    for (i = 0; i < partition_count; i++) {
+      if (spData[i].visible) /* is row visible */
+      {
+        if (strncmp(spData[i].features, spData[k].features,
+                    SPART_MAX_COLUMN_SIZE) != 0) {
+          show_features = 0; /* it is not common */
+          break;
+        }
+      }
     }
+    if (show_features == 1) {
+      show_all_partition = 1;
+      spheaders.features.visible = 0;
+    } else
+      total_width += spheaders.features.column_width + 1;
   }
 
 #ifdef __slurmdb_cluster_rec_t_defined
@@ -1703,7 +1956,8 @@ int main(int argc, char *argv[]) {
     if (show_cluster_name == 1) {
       show_all_partition = 1;
       spheaders.cluster_name.visible = 0;
-    }
+    } else
+      total_width += spheaders.cluster_name.column_width + 1;
   }
 #endif
 
@@ -1711,16 +1965,17 @@ int main(int argc, char *argv[]) {
   sp_headers_print(&spheaders);
 
 #ifdef SPART_SHOW_STATEMENT
-  if (show_info)
-    printf("\n  %s %-91s %s\n\n", SPART_STATEMENT_QUEUE_LINEPRE,
-           "==================================================================="
-           "=========================",
-           SPART_STATEMENT_QUEUE_LINEPOST);
+  if (show_info) {
+    printf("\n  %s ", SPART_STATEMENT_LINEPRE);
+    seperator_print('=', total_width);
+    printf(" %s\n\n", SPART_STATEMENT_LINEPOST);
+  }
 #endif
 
   /* Output is printing */
   for (i = 0; i < partition_count; i++) {
-    partition_print(&(spData[i]), &spheaders, show_max_mem, show_as_date);
+    partition_print(&(spData[i]), &spheaders, show_max_mem, show_as_date,
+                    total_width);
   }
 
   /* Common values are printing */
@@ -1741,6 +1996,10 @@ int main(int argc, char *argv[]) {
     spheaders.total_node.visible = 0;
     spheaders.waiting_resource.visible = 0;
     spheaders.waiting_other.visible = 0;
+    spheaders.my_running.visible = 0;
+    spheaders.my_waiting_resource.visible = 0;
+    spheaders.my_waiting_other.visible = 0;
+    spheaders.my_total.visible = 0;
     spheaders.min_nodes.visible = 0;
     spheaders.max_nodes.visible = 0;
     spheaders.max_cpus_per_node.visible = 0;
@@ -1752,11 +2011,19 @@ int main(int argc, char *argv[]) {
     spheaders.min_mem_gb.visible = 0;
     spheaders.partition_qos.visible = 0;
     spheaders.gres.visible = 0;
+    spheaders.features.visible = 0;
 
     printf("\n");
 #ifdef __slurmdb_cluster_rec_t_defined
-    if (show_cluster_name) spheaders.cluster_name.visible=1;
+    if (show_cluster_name) spheaders.cluster_name.visible = 1;
 #endif
+    if (show_my_running && show_my_waiting_resource && show_my_waiting_other &&
+        show_my_total) {
+      spheaders.my_running.visible = 1;
+      spheaders.my_waiting_resource.visible = 1;
+      spheaders.my_waiting_other.visible = 1;
+      spheaders.my_total.visible = 1;
+    }
     if (show_min_nodes) spheaders.min_nodes.visible = 1;
     if (show_max_nodes) spheaders.max_nodes.visible = 1;
     if (show_max_cpus_per_node) spheaders.max_cpus_per_node.visible = 1;
@@ -1768,19 +2035,20 @@ int main(int argc, char *argv[]) {
     if (show_min_mem_gb) spheaders.min_mem_gb.visible = 1;
     if (show_partition_qos) spheaders.partition_qos.visible = 1;
     if (show_gres) spheaders.gres.visible = 1;
-    spheaders.hspace.visible=1;
+    if (show_features) spheaders.features.visible = 1;
+    spheaders.hspace.visible = 1;
     sp_headers_print(&spheaders);
-    partition_print(&(spData[k]), &spheaders, show_max_mem, show_as_date);
+    partition_print(&(spData[k]), &spheaders, show_max_mem, show_as_date,
+                    total_width);
   }
 
 #ifdef SPART_SHOW_STATEMENT
   /* Statement is printing */
   fo = fopen(SPART_STATEMENT_DIR SPART_STATEMENT_FILE, "r");
   if (fo) {
-    printf("\n  %s %-91s %s\n", SPART_STATEMENT_LINEPRE,
-           "==================================================================="
-           "=========================",
-           SPART_STATEMENT_LINEPOST);
+    printf("\n  %s ", SPART_STATEMENT_LINEPRE);
+    seperator_print('=', total_width);
+    printf(" %s\n", SPART_STATEMENT_LINEPOST);
     while (fgets(re_str, SPART_INFO_STRING_SIZE, fo)) {
       /* To correctly frame some wide chars, but not all */
       m = 0;
@@ -1791,10 +2059,9 @@ int main(int argc, char *argv[]) {
       printf("  %s %-*s %s\n", SPART_STATEMENT_LINEPRE, 92 + m, re_str,
              SPART_STATEMENT_LINEPOST);
     }
-    printf("  %s %-91s %s\n", SPART_STATEMENT_LINEPRE,
-           "=================================================================="
-           "==========================",
-           SPART_STATEMENT_LINEPOST);
+    printf("  %s ", SPART_STATEMENT_LINEPRE);
+    seperator_print('=', total_width);
+    printf(" %s\n", SPART_STATEMENT_LINEPOST);
     pclose(fo);
   }
 #endif
