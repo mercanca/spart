@@ -1,7 +1,7 @@
  # spart
- A user-oriented partition info command for slurm.
+ A user-oriented partition info command for slurm. It gives a brief view of the cluster.
 
- Slurm does not have a command showing partition info in a user-friendly way.
+ Slurm does not have a command showing partition info in a user-friendly way. 
  I wrote a command, I hope you will find it useful. 
 
 ## Usage
@@ -294,12 +294,13 @@ $ spart -i
 
 ## Requirements
 
+The spart requires a running slurm which compiled with mysql.
 
 Some features of the spart requires Slurm 18.08 or newer. With older versions, the spart works with
  reduced feature set i.e. without showing the federated clusters column and user-spesific output.
 
-Also, with Slurm 20.02.X, the spart have a problem to connect the slurm database. Because of that,
- the spart works with reduced feature set at this version, too.
+Also, with Slurm 20.02.0 and 20.02.1, the slurm have a bug about to connect the slurm database via
+ slurm api. Because of that, the spart works with reduced feature set at this version, too.
 
 The spart requires, the slurm configured to give permision for reading other users job info,
  node info, and other information.

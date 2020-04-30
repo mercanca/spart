@@ -194,7 +194,7 @@ int spart_usage() {
 #ifdef SPART_COMPILE_FOR_UHEM
   printf("This is UHeM Version of the spart command.\n");
 #endif
-  printf("spart version 1.2.0\n\n");
+  printf("spart version 1.2.1\n\n");
   exit(1);
 }
 
@@ -847,7 +847,8 @@ int main(int argc, char *argv[]) {
   job_info_msg_t *job_buffer_ptr = NULL;
 
 #if SLURM_VERSION_NUMBER > SLURM_VERSION_NUM(18, 7, 0) && \
-    SLURM_VERSION_NUMBER < SLURM_VERSION_NUM(20, 2, 0)
+    SLURM_VERSION_NUMBER != SLURM_VERSION_NUM(20, 2, 0) && \
+    SLURM_VERSION_NUMBER != SLURM_VERSION_NUM(20, 2, 1)
   void **db_conn = NULL;
   slurmdb_assoc_cond_t assoc_cond;
   List assoc_list = NULL;
@@ -1090,7 +1091,8 @@ int main(int argc, char *argv[]) {
   }
 
 #if SLURM_VERSION_NUMBER > SLURM_VERSION_NUM(18, 7, 0) && \
-    SLURM_VERSION_NUMBER < SLURM_VERSION_NUM(20, 2, 0)
+    SLURM_VERSION_NUMBER != SLURM_VERSION_NUM(20, 2, 0) && \
+    SLURM_VERSION_NUMBER != SLURM_VERSION_NUM(20, 2, 1)
   /* Getting user account info */
   db_conn = slurmdb_connection_get();
   if (errno != SLURM_SUCCESS) {
@@ -1133,7 +1135,8 @@ int main(int argc, char *argv[]) {
     printf("\n");
     printf(" Your account(s): ");
 #if SLURM_VERSION_NUMBER > SLURM_VERSION_NUM(18, 7, 0) && \
-    SLURM_VERSION_NUMBER < SLURM_VERSION_NUM(20, 2, 0)
+    SLURM_VERSION_NUMBER != SLURM_VERSION_NUM(20, 2, 0) && \
+    SLURM_VERSION_NUMBER != SLURM_VERSION_NUM(20, 2, 1)
     for (k = 0; k < user_acct_count; k++) {
       printf("%s ", user_acct[k]);
     }
@@ -1353,7 +1356,8 @@ int main(int argc, char *argv[]) {
       strncat(spData[i].partition_status, ".", SPART_MAX_COLUMN_SIZE);
 
 #if SLURM_VERSION_NUMBER > SLURM_VERSION_NUM(18, 7, 0) && \
-    SLURM_VERSION_NUMBER < SLURM_VERSION_NUM(20, 2, 0)
+    SLURM_VERSION_NUMBER != SLURM_VERSION_NUM(20, 2, 0) && \
+    SLURM_VERSION_NUMBER != SLURM_VERSION_NUM(20, 2, 1)
     if ((part_ptr->allow_accounts != NULL) &&
         (strlen(part_ptr->allow_accounts) != 0)) {
       strncpy(strtmp, part_ptr->allow_accounts, SPART_INFO_STRING_SIZE);
@@ -2066,7 +2070,8 @@ int main(int argc, char *argv[]) {
   }
 #endif
 #if SLURM_VERSION_NUMBER > SLURM_VERSION_NUM(18, 7, 0) && \
-    SLURM_VERSION_NUMBER < SLURM_VERSION_NUM(20, 2, 0)
+    SLURM_VERSION_NUMBER != SLURM_VERSION_NUM(20, 2, 0) && \
+    SLURM_VERSION_NUMBER != SLURM_VERSION_NUM(20, 2, 1)
   /* free allocations */
   for (k = 0; k < user_acct_count; k++) {
     free(user_acct[k]);
