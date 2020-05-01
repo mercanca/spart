@@ -66,10 +66,10 @@
 #define SPART_STATEMENT_QUEPOST ".txt"
 #endif
 
-#define SPART_INFO_STRING_SIZE 256
-#define SPART_GRES_ARRAY_SIZE 64
-#define SPART_MAX_COLUMN_SIZE 32
-#define SPART_MAX_GROUP_SIZE 16
+#define SPART_INFO_STRING_SIZE 4096
+#define SPART_GRES_ARRAY_SIZE 256
+#define SPART_MAX_COLUMN_SIZE 64
+#define SPART_MAX_GROUP_SIZE 32
 
 /* Prints Command Usage and Exit */
 int spart_usage() {
@@ -194,7 +194,7 @@ int spart_usage() {
 #ifdef SPART_COMPILE_FOR_UHEM
   printf("This is UHeM Version of the spart command.\n");
 #endif
-  printf("spart version 1.2.1\n\n");
+  printf("spart version 1.2.2\n\n");
   exit(1);
 }
 
