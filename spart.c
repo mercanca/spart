@@ -78,7 +78,7 @@ int spart_usage() {
 #ifdef __slurmdb_cluster_rec_t_defined
       "[-c] "
 #endif
-      "[-g] [-i] [-t] [-f] [-l] [-J] [-h]\n\n");
+      "[-g] [-i] [-t] [-f] [-l] [-s] [-J] [-h]\n\n");
   printf(
       "This program shows brief partition info with core count of available "
       "nodes and pending jobs.\n\n");
@@ -105,7 +105,7 @@ int spart_usage() {
       "The OTHER PENDING column shows core counts of pending jobs because "
       "of the other reasons such\n as license or other limits.\n\n");
   printf(
-      "The YOUR-RUN, YOUR-PEND, YOUR-OTHR, and YOUR-TOTL columns shows "
+      "The YOUR-RUN, PEND-RES, PEND-OTHR, and YOUR-TOTL columns shows "
       "the counts of the running,\n resource pending, other pending, and "
       "total job count of the current user, respectively.\n If these four "
       "columns are have same values, These same values of that four columns "
@@ -186,6 +186,7 @@ int spart_usage() {
       "\t-f\tthe ouput shows each FEATURES defined in that partition "
       "and (in paranteses)\n\t\tthe total number of nodes in that "
       "partition containing that FEATURES.\n\n");
+  printf("\t-s\tthe simple output. spart don't show slurm config columns.\n\n");
   printf("\t-J\tthe output does not shown the info about the user's jobs.\n\n");
   printf(
       "\t-l\tall posible columns will be shown, except"
@@ -194,7 +195,7 @@ int spart_usage() {
 #ifdef SPART_COMPILE_FOR_UHEM
   printf("This is UHeM Version of the spart command.\n");
 #endif
-  printf("spart version 1.2.3\n\n");
+  printf("spart version 1.3.0\n\n");
   exit(1);
 }
 
@@ -403,13 +404,13 @@ void sp_headers_set_defaults(sp_headers_t *sph) {
   strncpy(sph->my_running.line2, " RUN", sph->my_running.column_width);
   sph->my_waiting_resource.visible = 1;
   sph->my_waiting_resource.column_width = 4;
-  strncpy(sph->my_waiting_resource.line1, "YOUR",
+  strncpy(sph->my_waiting_resource.line1, "PEND",
           sph->my_waiting_resource.column_width);
-  strncpy(sph->my_waiting_resource.line2, "PEND",
+  strncpy(sph->my_waiting_resource.line2, " RES",
           sph->my_waiting_resource.column_width);
   sph->my_waiting_other.visible = 1;
   sph->my_waiting_other.column_width = 4;
-  strncpy(sph->my_waiting_other.line1, "YOUR",
+  strncpy(sph->my_waiting_other.line1, "PEND",
           sph->my_waiting_other.column_width);
   strncpy(sph->my_waiting_other.line2, "OTHR",
           sph->my_waiting_other.column_width);
@@ -915,6 +916,7 @@ int main(int argc, char *argv[]) {
   int show_my_waiting_resource = 1;
   int show_my_waiting_other = 1;
   int show_my_total = 1;
+  int show_simple = 0;
 
   uint16_t partname_lenght = 0;
 #ifdef __slurmdb_cluster_rec_t_defined
@@ -1009,6 +1011,33 @@ int main(int argc, char *argv[]) {
 
     if (strncmp(argv[k], "-t", 3) == 0) {
       show_as_date = 1;
+      continue;
+    }
+
+    if (strncmp(argv[k], "-s", 3) == 0) {
+      show_gres = 0;
+      show_min_nodes = 0;
+      show_max_nodes = 0;
+      show_max_cpus_per_node = 0;
+      show_max_mem_per_cpu = 0;
+      show_def_mem_per_cpu = 0;
+      show_mjt_time = 0;
+      show_djt_time = 0;
+      show_partition_qos = 0;
+      show_parameter_L = 0;
+      show_simple = 1;
+      spheaders.min_nodes.visible = 0;
+      spheaders.max_nodes.visible = 0;
+      spheaders.max_cpus_per_node.visible = 0;
+      spheaders.max_mem_per_cpu.visible = 0;
+      spheaders.def_mem_per_cpu.visible = 0;
+      spheaders.djt_time.visible = 0;
+      spheaders.mjt_time.visible = 0;
+      spheaders.min_core.visible = 0;
+      spheaders.min_mem_gb.visible = 0;
+      spheaders.partition_qos.visible = 0;
+      spheaders.gres.visible = 0;
+      spheaders.features.visible = 0;
       continue;
     }
 
@@ -1500,68 +1529,71 @@ int main(int argc, char *argv[]) {
     spData[i].total_node = part_ptr->total_nodes;
     /* spData[i].waiting_resource and spData[i].waiting_other previously set
      */
-    spData[i].min_nodes = part_ptr->min_nodes;
-    if ((part_ptr->min_nodes != default_min_nodes) && (spData[i].visible))
-      show_min_nodes = 1;
-    spData[i].max_nodes = part_ptr->max_nodes;
-    if ((part_ptr->max_nodes != default_max_nodes) && (spData[i].visible))
-      show_max_nodes = 1;
-    spData[i].max_cpus_per_node = part_ptr->max_cpus_per_node;
-    if ((part_ptr->max_cpus_per_node != default_max_cpus_per_node) &&
-        (part_ptr->max_cpus_per_node != 0) && (spData[i].visible))
-      show_max_cpus_per_node = 1;
+    if (!show_simple) {
+      spData[i].min_nodes = part_ptr->min_nodes;
+      if ((part_ptr->min_nodes != default_min_nodes) && (spData[i].visible))
+        show_min_nodes = 1;
+      spData[i].max_nodes = part_ptr->max_nodes;
+      if ((part_ptr->max_nodes != default_max_nodes) && (spData[i].visible))
+        show_max_nodes = 1;
+      spData[i].max_cpus_per_node = part_ptr->max_cpus_per_node;
+      if ((part_ptr->max_cpus_per_node != default_max_cpus_per_node) &&
+          (part_ptr->max_cpus_per_node != 0) && (spData[i].visible))
+        show_max_cpus_per_node = 1;
 
-    /* the def_mem_per_cpu and max_mem_per_cpu members contains
-     * both FLAG bit (MEM_PER_CPU) for CPU/NODE selection, and values. */
-    def_mem_per_cpu = part_ptr->def_mem_per_cpu;
-    if (def_mem_per_cpu & MEM_PER_CPU) {
-      strncpy(spheaders.def_mem_per_cpu.line2, "GB/CPU",
-              spheaders.def_mem_per_cpu.column_width);
-      def_mem_per_cpu = def_mem_per_cpu & (~MEM_PER_CPU);
-    } else {
-      strncpy(spheaders.def_mem_per_cpu.line2, "G/NODE",
-              spheaders.def_mem_per_cpu.column_width);
+      /* the def_mem_per_cpu and max_mem_per_cpu members contains
+       * both FLAG bit (MEM_PER_CPU) for CPU/NODE selection, and values. */
+      def_mem_per_cpu = part_ptr->def_mem_per_cpu;
+      if (def_mem_per_cpu & MEM_PER_CPU) {
+        strncpy(spheaders.def_mem_per_cpu.line2, "GB/CPU",
+                spheaders.def_mem_per_cpu.column_width);
+        def_mem_per_cpu = def_mem_per_cpu & (~MEM_PER_CPU);
+      } else {
+        strncpy(spheaders.def_mem_per_cpu.line2, "G/NODE",
+                spheaders.def_mem_per_cpu.column_width);
+      }
+      spData[i].def_mem_per_cpu = (uint64_t)(def_mem_per_cpu / 1000u);
+      if ((def_mem_per_cpu != default_def_mem_per_cpu) && (spData[i].visible))
+        show_def_mem_per_cpu = 1;
+
+      max_mem_per_cpu = part_ptr->max_mem_per_cpu;
+      if (max_mem_per_cpu & MEM_PER_CPU) {
+        strncpy(spheaders.max_mem_per_cpu.line2, "GB/CPU",
+                spheaders.max_mem_per_cpu.column_width);
+        max_mem_per_cpu = max_mem_per_cpu & (~MEM_PER_CPU);
+      } else {
+        strncpy(spheaders.max_mem_per_cpu.line2, "G/NODE",
+                spheaders.max_mem_per_cpu.column_width);
+      }
+      spData[i].max_mem_per_cpu = (uint64_t)(max_mem_per_cpu / 1000u);
+      if ((max_mem_per_cpu != default_max_mem_per_cpu) && (spData[i].visible))
+        show_max_mem_per_cpu = 1;
+
+      spData[i].mjt_time = part_ptr->max_time;
+      if ((part_ptr->max_time != default_mjt_time) && (spData[i].visible))
+        show_mjt_time = 1;
+      spData[i].djt_time = part_ptr->default_time;
+      if ((part_ptr->default_time != default_mjt_time) &&
+          (part_ptr->default_time != NO_VAL) &&
+          (part_ptr->default_time != part_ptr->max_time) && (spData[i].visible))
+        show_djt_time = 1;
+      spData[i].min_core = min_cpu;
+      spData[i].max_core = max_cpu;
+      spData[i].max_mem_gb = (uint16_t)(max_mem / 1000u);
+      spData[i].min_mem_gb = (uint16_t)(min_mem / 1000u);
+
+      if ((part_ptr->qos_char != NULL) && (strlen(part_ptr->qos_char) > 0)) {
+        strncpy(spData[i].partition_qos, part_ptr->qos_char,
+                SPART_MAX_COLUMN_SIZE);
+        if (strncmp(part_ptr->qos_char, default_qos, SPART_MAX_COLUMN_SIZE) !=
+            0)
+          show_partition_qos = 1;
+      } else
+        strncpy(spData[i].partition_qos, "-", SPART_MAX_COLUMN_SIZE);
     }
-    spData[i].def_mem_per_cpu = (uint64_t)(def_mem_per_cpu / 1000u);
-    if ((def_mem_per_cpu != default_def_mem_per_cpu) && (spData[i].visible))
-      show_def_mem_per_cpu = 1;
-
-    max_mem_per_cpu = part_ptr->max_mem_per_cpu;
-    if (max_mem_per_cpu & MEM_PER_CPU) {
-      strncpy(spheaders.max_mem_per_cpu.line2, "GB/CPU",
-              spheaders.max_mem_per_cpu.column_width);
-      max_mem_per_cpu = max_mem_per_cpu & (~MEM_PER_CPU);
-    } else {
-      strncpy(spheaders.max_mem_per_cpu.line2, "G/NODE",
-              spheaders.max_mem_per_cpu.column_width);
-    }
-    spData[i].max_mem_per_cpu = (uint64_t)(max_mem_per_cpu / 1000u);
-    if ((max_mem_per_cpu != default_max_mem_per_cpu) && (spData[i].visible))
-      show_max_mem_per_cpu = 1;
-
-    spData[i].mjt_time = part_ptr->max_time;
-    if ((part_ptr->max_time != default_mjt_time) && (spData[i].visible))
-      show_mjt_time = 1;
-    spData[i].djt_time = part_ptr->default_time;
-    if ((part_ptr->default_time != default_mjt_time) &&
-        (part_ptr->default_time != NO_VAL) &&
-        (part_ptr->default_time != part_ptr->max_time) && (spData[i].visible))
-      show_djt_time = 1;
-    spData[i].min_core = min_cpu;
-    spData[i].max_core = max_cpu;
-    spData[i].max_mem_gb = (uint16_t)(max_mem / 1000u);
-    spData[i].min_mem_gb = (uint16_t)(min_mem / 1000u);
     strncpy(spData[i].partition_name, part_ptr->name, SPART_MAX_COLUMN_SIZE);
     tmp_lenght = strlen(part_ptr->name);
     if (tmp_lenght > partname_lenght) partname_lenght = tmp_lenght;
-
-    if ((part_ptr->qos_char != NULL) && (strlen(part_ptr->qos_char) > 0)) {
-      strncpy(spData[i].partition_qos, part_ptr->qos_char,
-              SPART_MAX_COLUMN_SIZE);
-      if (strncmp(part_ptr->qos_char, default_qos, SPART_MAX_COLUMN_SIZE) != 0)
-        show_partition_qos = 1;
-    } else
-      strncpy(spData[i].partition_qos, "-", SPART_MAX_COLUMN_SIZE);
   }
 
   if (partname_lenght > spheaders.partition_name.column_width) {
@@ -1603,7 +1635,7 @@ int main(int argc, char *argv[]) {
 #endif
 
   /* If these column at default values, don't show */
-  if (!show_parameter_L) {
+  if ((!show_parameter_L) && (!show_simple)) {
     spheaders.min_nodes.visible = show_min_nodes;
     spheaders.max_nodes.visible = show_max_nodes;
     spheaders.max_cpus_per_node.visible = show_max_cpus_per_node;
@@ -1638,338 +1670,339 @@ int main(int argc, char *argv[]) {
   /* Common Values scanning */
   /* reuse local show_xxx variables for different purpose */
   show_all_partition = 0; /* are there common feature */
-  k = -1;                 /* first visible row (partition) */
-  for (i = 0; i < partition_count; i++)
-    if ((spData[i].visible) && (k == -1)) {
-      k = i; /* first visible partition */
-    }
-
-  if (spheaders.my_running.visible) {/* is column visible */
-    show_my_running = 1;
-    for (i = 0; i < partition_count; i++) {
-      if (spData[i].visible) /* is row visible */
-      {
-        if (spData[i].my_running != spData[k].my_running) {
-          show_my_running = 0; /* it is not common */
-          break;
-        }
+  if (!show_simple) {
+    k = -1; /* first visible row (partition) */
+    for (i = 0; i < partition_count; i++)
+      if ((spData[i].visible) && (k == -1)) {
+        k = i; /* first visible partition */
       }
-    }
-  }
 
-  if (spheaders.my_waiting_resource.visible) {/* is column visible */
-    show_my_waiting_resource = 1;
-    for (i = 0; i < partition_count; i++) {
-      if (spData[i].visible) /* is row visible */
-      {
-        if (spData[i].my_waiting_resource != spData[k].my_waiting_resource) {
-          show_my_waiting_resource = 0; /* it is not common */
-          break;
-        }
-      }
-    }
-  }
-
-  if (spheaders.my_waiting_other.visible) {/* is column visible */
-    show_my_waiting_other = 1;
-    for (i = 0; i < partition_count; i++) {
-      if (spData[i].visible) /* is row visible */
-      {
-        if (spData[i].my_waiting_other != spData[k].my_waiting_other) {
-          show_my_waiting_other = 0; /* it is not common */
-          break;
-        }
-      }
-    }
-  }
-
-  if (spheaders.my_total.visible) {/* is column visible */
-    show_my_total = 1;
-    for (i = 0; i < partition_count; i++) {
-      if (spData[i].visible) /* is row visible */
-      {
-        if (spData[i].my_total != spData[k].my_total) {
-          show_my_total = 0; /* it is not common */
-          break;
-        }
-      }
-    }
-    if (show_my_waiting_resource && show_my_waiting_other && show_my_running &&
-        show_my_total) {
-      show_all_partition = 1;
-      spheaders.my_running.visible = 0;
-      spheaders.my_waiting_resource.visible = 0;
-      spheaders.my_waiting_other.visible = 0;
-      spheaders.my_total.visible = 0;
-    } else
-      total_width += spheaders.my_running.column_width +
-                     spheaders.my_waiting_resource.column_width +
-                     spheaders.my_waiting_other.column_width +
-                     spheaders.my_total.column_width + 4;
-  }
-
-  if (spheaders.min_nodes.visible) {/* is column visible */
-    show_min_nodes = 1;
-    for (i = 0; i < partition_count; i++) {
-      if (spData[i].visible) /* is row visible */
-      {
-        if (spData[i].min_nodes != spData[k].min_nodes) {
-          show_min_nodes = 0; /* it is not common */
-          break;
-        }
-      }
-    }
-    if (show_min_nodes == 1) {
-      show_all_partition = 1;
-      spheaders.min_nodes.visible = 0;
-    } else
-      total_width += spheaders.min_nodes.column_width + 1;
-  }
-
-  if (spheaders.max_nodes.visible) {/* is column visible */
-    show_max_nodes = 1;
-    for (i = 0; i < partition_count; i++) {
-      if (spData[i].visible) /* is row visible */
-      {
-        if (spData[i].max_nodes != spData[k].max_nodes) {
-          show_max_nodes = 0; /* it is not common */
-          break;
-        }
-      }
-    }
-    if (show_max_nodes == 1) {
-      show_all_partition = 1;
-      spheaders.max_nodes.visible = 0;
-    } else
-      total_width += spheaders.max_nodes.column_width + 1;
-  }
-
-  if (spheaders.def_mem_per_cpu.visible) {/* is column visible */
-    show_def_mem_per_cpu = 1;
-    for (i = 0; i < partition_count; i++) {
-      if (spData[i].visible) /* is row visible */
-      {
-        if (spData[i].def_mem_per_cpu != spData[k].def_mem_per_cpu) {
-          show_def_mem_per_cpu = 0; /* it is not common */
-          break;
-        }
-      }
-    }
-    if (show_def_mem_per_cpu == 1) {
-      show_all_partition = 1;
-      spheaders.def_mem_per_cpu.visible = 0;
-    } else
-      total_width += spheaders.def_mem_per_cpu.column_width + 1;
-  }
-
-  if (spheaders.max_mem_per_cpu.visible) {/* is column visible */
-    show_max_mem_per_cpu = 1;
-    for (i = 0; i < partition_count; i++) {
-      if (spData[i].visible) /* is row visible */
-      {
-        if (spData[i].max_mem_per_cpu != spData[k].max_mem_per_cpu) {
-          show_max_mem_per_cpu = 0; /* it is not common */
-          break;
-        }
-      }
-    }
-    if (show_max_mem_per_cpu == 1) {
-      show_all_partition = 1;
-      spheaders.max_mem_per_cpu.visible = 0;
-    } else
-      total_width += spheaders.max_mem_per_cpu.column_width + 1;
-  }
-
-  if (spheaders.max_cpus_per_node.visible) {/* is column visible */
-    show_max_cpus_per_node = 1;
-    for (i = 0; i < partition_count; i++) {
-      if (spData[i].visible) /* is row visible */
-      {
-        if (spData[i].max_cpus_per_node != spData[k].max_cpus_per_node) {
-          show_max_cpus_per_node = 0; /* it is not common */
-          break;
-        }
-      }
-    }
-    if (show_max_cpus_per_node == 1) {
-      show_all_partition = 1;
-      spheaders.max_cpus_per_node.visible = 0;
-    } else
-      total_width += spheaders.max_cpus_per_node.column_width + 1;
-  }
-
-  if (spheaders.mjt_time.visible) {/* is column visible */
-    show_mjt_time = 1;
-    for (i = 0; i < partition_count; i++) {
-      if (spData[i].visible) /* is row visible */
-      {
-        if (spData[i].mjt_time != spData[k].mjt_time) {
-          show_mjt_time = 0; /* it is not common */
-          break;
-        }
-      }
-    }
-    if (show_mjt_time == 1) {
-      show_all_partition = 1;
-      spheaders.mjt_time.visible = 0;
-    } else
-      total_width += spheaders.mjt_time.column_width + 1;
-  }
-
-  if (spheaders.djt_time.visible) {/* is column visible */
-    show_djt_time = 1;
-    for (i = 0; i < partition_count; i++) {
-      if (spData[i].visible) /* is row visible */
-      {
-        if (spData[i].djt_time != spData[k].djt_time) {
-          show_djt_time = 0; /* it is not common */
-          break;
-        }
-      }
-    }
-    if (show_djt_time == 1) {
-      show_all_partition = 1;
-      spheaders.djt_time.visible = 0;
-    } else
-      total_width += spheaders.djt_time.column_width + 1;
-  }
-
-  if (spheaders.min_core.visible) {/* is column visible */
-    show_min_core = 1;
-    for (i = 0; i < partition_count; i++) {
-      if (spData[i].visible) /* is row visible */
-      {
-        if (spData[i].min_core != spData[k].min_core) {
-          show_min_core = 0; /* it is not common */
-          break;
-        }
-      }
-    }
-    /* is max_core visible */
-    if (show_max_mem) /* is column visible */
+    if (spheaders.my_running.visible) {/* is column visible */
+      show_my_running = 1;
       for (i = 0; i < partition_count; i++) {
         if (spData[i].visible) /* is row visible */
         {
-          if (spData[i].max_core != spData[k].max_core) {
+          if (spData[i].my_running != spData[k].my_running) {
+            show_my_running = 0; /* it is not common */
+            break;
+          }
+        }
+      }
+    }
+
+    if (spheaders.my_waiting_resource.visible) {/* is column visible */
+      show_my_waiting_resource = 1;
+      for (i = 0; i < partition_count; i++) {
+        if (spData[i].visible) /* is row visible */
+        {
+          if (spData[i].my_waiting_resource != spData[k].my_waiting_resource) {
+            show_my_waiting_resource = 0; /* it is not common */
+            break;
+          }
+        }
+      }
+    }
+
+    if (spheaders.my_waiting_other.visible) {/* is column visible */
+      show_my_waiting_other = 1;
+      for (i = 0; i < partition_count; i++) {
+        if (spData[i].visible) /* is row visible */
+        {
+          if (spData[i].my_waiting_other != spData[k].my_waiting_other) {
+            show_my_waiting_other = 0; /* it is not common */
+            break;
+          }
+        }
+      }
+    }
+
+    if (spheaders.my_total.visible) {/* is column visible */
+      show_my_total = 1;
+      for (i = 0; i < partition_count; i++) {
+        if (spData[i].visible) /* is row visible */
+        {
+          if (spData[i].my_total != spData[k].my_total) {
+            show_my_total = 0; /* it is not common */
+            break;
+          }
+        }
+      }
+      if (show_my_waiting_resource && show_my_waiting_other &&
+          show_my_running && show_my_total) {
+        show_all_partition = 1;
+        spheaders.my_running.visible = 0;
+        spheaders.my_waiting_resource.visible = 0;
+        spheaders.my_waiting_other.visible = 0;
+        spheaders.my_total.visible = 0;
+      } else
+        total_width += spheaders.my_running.column_width +
+                       spheaders.my_waiting_resource.column_width +
+                       spheaders.my_waiting_other.column_width +
+                       spheaders.my_total.column_width + 4;
+    }
+
+    if (spheaders.min_nodes.visible) {/* is column visible */
+      show_min_nodes = 1;
+      for (i = 0; i < partition_count; i++) {
+        if (spData[i].visible) /* is row visible */
+        {
+          if (spData[i].min_nodes != spData[k].min_nodes) {
+            show_min_nodes = 0; /* it is not common */
+            break;
+          }
+        }
+      }
+      if (show_min_nodes == 1) {
+        show_all_partition = 1;
+        spheaders.min_nodes.visible = 0;
+      } else
+        total_width += spheaders.min_nodes.column_width + 1;
+    }
+
+    if (spheaders.max_nodes.visible) {/* is column visible */
+      show_max_nodes = 1;
+      for (i = 0; i < partition_count; i++) {
+        if (spData[i].visible) /* is row visible */
+        {
+          if (spData[i].max_nodes != spData[k].max_nodes) {
+            show_max_nodes = 0; /* it is not common */
+            break;
+          }
+        }
+      }
+      if (show_max_nodes == 1) {
+        show_all_partition = 1;
+        spheaders.max_nodes.visible = 0;
+      } else
+        total_width += spheaders.max_nodes.column_width + 1;
+    }
+
+    if (spheaders.def_mem_per_cpu.visible) {/* is column visible */
+      show_def_mem_per_cpu = 1;
+      for (i = 0; i < partition_count; i++) {
+        if (spData[i].visible) /* is row visible */
+        {
+          if (spData[i].def_mem_per_cpu != spData[k].def_mem_per_cpu) {
+            show_def_mem_per_cpu = 0; /* it is not common */
+            break;
+          }
+        }
+      }
+      if (show_def_mem_per_cpu == 1) {
+        show_all_partition = 1;
+        spheaders.def_mem_per_cpu.visible = 0;
+      } else
+        total_width += spheaders.def_mem_per_cpu.column_width + 1;
+    }
+
+    if (spheaders.max_mem_per_cpu.visible) {/* is column visible */
+      show_max_mem_per_cpu = 1;
+      for (i = 0; i < partition_count; i++) {
+        if (spData[i].visible) /* is row visible */
+        {
+          if (spData[i].max_mem_per_cpu != spData[k].max_mem_per_cpu) {
+            show_max_mem_per_cpu = 0; /* it is not common */
+            break;
+          }
+        }
+      }
+      if (show_max_mem_per_cpu == 1) {
+        show_all_partition = 1;
+        spheaders.max_mem_per_cpu.visible = 0;
+      } else
+        total_width += spheaders.max_mem_per_cpu.column_width + 1;
+    }
+
+    if (spheaders.max_cpus_per_node.visible) {/* is column visible */
+      show_max_cpus_per_node = 1;
+      for (i = 0; i < partition_count; i++) {
+        if (spData[i].visible) /* is row visible */
+        {
+          if (spData[i].max_cpus_per_node != spData[k].max_cpus_per_node) {
+            show_max_cpus_per_node = 0; /* it is not common */
+            break;
+          }
+        }
+      }
+      if (show_max_cpus_per_node == 1) {
+        show_all_partition = 1;
+        spheaders.max_cpus_per_node.visible = 0;
+      } else
+        total_width += spheaders.max_cpus_per_node.column_width + 1;
+    }
+
+    if (spheaders.mjt_time.visible) {/* is column visible */
+      show_mjt_time = 1;
+      for (i = 0; i < partition_count; i++) {
+        if (spData[i].visible) /* is row visible */
+        {
+          if (spData[i].mjt_time != spData[k].mjt_time) {
+            show_mjt_time = 0; /* it is not common */
+            break;
+          }
+        }
+      }
+      if (show_mjt_time == 1) {
+        show_all_partition = 1;
+        spheaders.mjt_time.visible = 0;
+      } else
+        total_width += spheaders.mjt_time.column_width + 1;
+    }
+
+    if (spheaders.djt_time.visible) {/* is column visible */
+      show_djt_time = 1;
+      for (i = 0; i < partition_count; i++) {
+        if (spData[i].visible) /* is row visible */
+        {
+          if (spData[i].djt_time != spData[k].djt_time) {
+            show_djt_time = 0; /* it is not common */
+            break;
+          }
+        }
+      }
+      if (show_djt_time == 1) {
+        show_all_partition = 1;
+        spheaders.djt_time.visible = 0;
+      } else
+        total_width += spheaders.djt_time.column_width + 1;
+    }
+
+    if (spheaders.min_core.visible) {/* is column visible */
+      show_min_core = 1;
+      for (i = 0; i < partition_count; i++) {
+        if (spData[i].visible) /* is row visible */
+        {
+          if (spData[i].min_core != spData[k].min_core) {
             show_min_core = 0; /* it is not common */
             break;
           }
         }
       }
-    if (show_min_core == 1) {
-      show_all_partition = 1;
-      spheaders.min_core.visible = 0;
-    } else
-      total_width += spheaders.min_core.column_width + 1;
-  }
-
-  if (spheaders.min_mem_gb.visible) {/* is column visible */
-    show_min_mem_gb = 1;
-    for (i = 0; i < partition_count; i++) {
-      if (spData[i].visible) /* is row visible */
-      {
-        if (spData[i].min_mem_gb != spData[k].min_mem_gb) {
-          show_min_mem_gb = 0; /* it is not common */
-          break;
+      /* is max_core visible */
+      if (show_max_mem) /* is column visible */
+        for (i = 0; i < partition_count; i++) {
+          if (spData[i].visible) /* is row visible */
+          {
+            if (spData[i].max_core != spData[k].max_core) {
+              show_min_core = 0; /* it is not common */
+              break;
+            }
+          }
         }
-      }
+      if (show_min_core == 1) {
+        show_all_partition = 1;
+        spheaders.min_core.visible = 0;
+      } else
+        total_width += spheaders.min_core.column_width + 1;
     }
-    /* is max_mem_gb visible */
-    if (show_max_mem) /* is column visible */
+
+    if (spheaders.min_mem_gb.visible) {/* is column visible */
+      show_min_mem_gb = 1;
       for (i = 0; i < partition_count; i++) {
         if (spData[i].visible) /* is row visible */
         {
-          if (spData[i].max_mem_gb != spData[k].max_mem_gb) {
-            show_min_core = 0; /* it is not common */
+          if (spData[i].min_mem_gb != spData[k].min_mem_gb) {
+            show_min_mem_gb = 0; /* it is not common */
             break;
           }
         }
       }
-    if (show_min_mem_gb == 1) {
-      show_all_partition = 1;
-      spheaders.min_mem_gb.visible = 0;
-    } else
-      total_width += spheaders.min_mem_gb.column_width + 1;
-  }
+      /* is max_mem_gb visible */
+      if (show_max_mem) /* is column visible */
+        for (i = 0; i < partition_count; i++) {
+          if (spData[i].visible) /* is row visible */
+          {
+            if (spData[i].max_mem_gb != spData[k].max_mem_gb) {
+              show_min_core = 0; /* it is not common */
+              break;
+            }
+          }
+        }
+      if (show_min_mem_gb == 1) {
+        show_all_partition = 1;
+        spheaders.min_mem_gb.visible = 0;
+      } else
+        total_width += spheaders.min_mem_gb.column_width + 1;
+    }
 
-  if (spheaders.partition_qos.visible) {/* is column visible */
-    show_partition_qos = 1;
-    for (i = 0; i < partition_count; i++) {
-      if (spData[i].visible) /* is row visible */
-      {
-        if (strncmp(spData[i].partition_qos, spData[k].partition_qos,
-                    SPART_MAX_COLUMN_SIZE) != 0) {
-          show_partition_qos = 0; /* it is not common */
-          break;
+    if (spheaders.partition_qos.visible) {/* is column visible */
+      show_partition_qos = 1;
+      for (i = 0; i < partition_count; i++) {
+        if (spData[i].visible) /* is row visible */
+        {
+          if (strncmp(spData[i].partition_qos, spData[k].partition_qos,
+                      SPART_MAX_COLUMN_SIZE) != 0) {
+            show_partition_qos = 0; /* it is not common */
+            break;
+          }
         }
       }
+      if (show_partition_qos == 1) {
+        show_all_partition = 1;
+        spheaders.partition_qos.visible = 0;
+      } else
+        total_width += spheaders.partition_qos.column_width + 1;
     }
-    if (show_partition_qos == 1) {
-      show_all_partition = 1;
-      spheaders.partition_qos.visible = 0;
-    } else
-      total_width += spheaders.partition_qos.column_width + 1;
-  }
 
-  if (spheaders.gres.visible) {/* is column visible */
-    show_gres = 1;
-    for (i = 0; i < partition_count; i++) {
-      if (spData[i].visible) /* is row visible */
-      {
-        if (strncmp(spData[i].gres, spData[k].gres, SPART_MAX_COLUMN_SIZE) !=
-            0) {
-          show_gres = 0; /* it is not common */
-          break;
+    if (spheaders.gres.visible) {/* is column visible */
+      show_gres = 1;
+      for (i = 0; i < partition_count; i++) {
+        if (spData[i].visible) /* is row visible */
+        {
+          if (strncmp(spData[i].gres, spData[k].gres, SPART_MAX_COLUMN_SIZE) !=
+              0) {
+            show_gres = 0; /* it is not common */
+            break;
+          }
         }
       }
+      if (show_gres == 1) {
+        show_all_partition = 1;
+        spheaders.gres.visible = 0;
+      } else
+        total_width += spheaders.gres.column_width + 1;
     }
-    if (show_gres == 1) {
-      show_all_partition = 1;
-      spheaders.gres.visible = 0;
-    } else
-      total_width += spheaders.gres.column_width + 1;
-  }
 
-  if (spheaders.features.visible) {/* is column visible */
-    show_features = 1;
-    for (i = 0; i < partition_count; i++) {
-      if (spData[i].visible) /* is row visible */
-      {
-        if (strncmp(spData[i].features, spData[k].features,
-                    SPART_MAX_COLUMN_SIZE) != 0) {
-          show_features = 0; /* it is not common */
-          break;
+    if (spheaders.features.visible) {/* is column visible */
+      show_features = 1;
+      for (i = 0; i < partition_count; i++) {
+        if (spData[i].visible) /* is row visible */
+        {
+          if (strncmp(spData[i].features, spData[k].features,
+                      SPART_MAX_COLUMN_SIZE) != 0) {
+            show_features = 0; /* it is not common */
+            break;
+          }
         }
       }
+      if (show_features == 1) {
+        show_all_partition = 1;
+        spheaders.features.visible = 0;
+      } else
+        total_width += spheaders.features.column_width + 1;
     }
-    if (show_features == 1) {
-      show_all_partition = 1;
-      spheaders.features.visible = 0;
-    } else
-      total_width += spheaders.features.column_width + 1;
-  }
 
 #ifdef __slurmdb_cluster_rec_t_defined
-  if (spheaders.cluster_name.visible) {/* is column visible */
-    show_cluster_name = 1;
-    for (i = 0; i < partition_count; i++) {
-      if (spData[i].visible) /* is row visible */
-      {
-        if (strncmp(spData[i].cluster_name, spData[k].cluster_name,
-                    SPART_MAX_COLUMN_SIZE) != 0) {
-          show_cluster_name = 0; /* it is not common */
-          break;
+    if (spheaders.cluster_name.visible) {/* is column visible */
+      show_cluster_name = 1;
+      for (i = 0; i < partition_count; i++) {
+        if (spData[i].visible) /* is row visible */
+        {
+          if (strncmp(spData[i].cluster_name, spData[k].cluster_name,
+                      SPART_MAX_COLUMN_SIZE) != 0) {
+            show_cluster_name = 0; /* it is not common */
+            break;
+          }
         }
       }
+      if (show_cluster_name == 1) {
+        show_all_partition = 1;
+        spheaders.cluster_name.visible = 0;
+      } else
+        total_width += spheaders.cluster_name.column_width + 1;
     }
-    if (show_cluster_name == 1) {
-      show_all_partition = 1;
-      spheaders.cluster_name.visible = 0;
-    } else
-      total_width += spheaders.cluster_name.column_width + 1;
-  }
 #endif
-
+  }
   /* Headers is printing */
   sp_headers_print(&spheaders);
 

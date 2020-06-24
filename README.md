@@ -6,7 +6,7 @@
 
 ## Usage
 
- **Usage: spart [-m] [-a] [-c] [-g] [-i] [-t] [-f] [-J] [-l] [-h]**
+ **Usage: spart [-m] [-a] [-c] [-g] [-i] [-t] [-f] [-s] [-J] [-l] [-h]**
 
  This program shows **the user specific partition info** with core count of available nodes and pending jobs. It hides unnecessary information for users in the output i.e. unusable partitions, undefined limits, unusable nodes etc., but it shows related and usefull information such as how many pending jobs waiting for the resourses or for the other reasons.
 
@@ -14,8 +14,8 @@
 
 ```
  $ spart
-     QUEUE STA   FREE  TOTAL RESORC  OTHER   FREE  TOTAL |YOUR YOUR YOUR YOUR |   MIN   MAX    MAXIMUM  CORES   NODE
- PARTITION TUS  CORES  CORES PENDNG PENDNG  NODES  NODES | RUN PEND OTHR TOTL | NODES NODES   JOB-TIME  /NODE MEM-GB
+     QUEUE STA   FREE  TOTAL RESORC  OTHER   FREE  TOTAL |YOUR PEND PEND YOUR |   MIN   MAX    MAXIMUM  CORES   NODE
+ PARTITION TUS  CORES  CORES PENDNG PENDNG  NODES  NODES | RUN  RES OTHR TOTL | NODES NODES   JOB-TIME  /NODE MEM-GB
       defq   *     84   2436    140     28      3     87 |   3    5    0    8 |     1     -     7 days     28    126
     shortq         84   2604      0      0      3     93 |   0    0    0    0 |     1     2     1 hour     28    126
      longq        120    336      0    120      5     14 |   1    0    0    1 |     1     -    21 days     24     62
@@ -43,8 +43,8 @@ WARNING: The Slurm settings have info restrictions!
          long        736   9172      0      0      0    278 ||     -      8    252    15 days     24    256      -
         debug       1633  14532      0      0      8    461 ||     4      8    252    15 mins     24    128  debug
 
-                  YOUR YOUR YOUR YOUR   MIN    DEFAULT
-                   RUN PEND OTHR TOTL NODES   JOB-TIME
+                  YOUR PEND PEND YOUR   MIN    DEFAULT
+                   RUN  RES OTHR TOTL NODES   JOB-TIME
    COMMON VALUES:    0    0    0    0     1     2 mins
 
 ```
@@ -72,7 +72,7 @@ The **RESOURCE PENDING** column shows core counts of pending jobs because of the
 The **OTHER PENDING** column shows core counts of pending jobs because of the other reasons such
  as license or other limits.
 
-The **YOUR-RUN, YOUR-PEND, YOUR-OTHR**, and **YOUR-TOTL** columns shows the counts of the running,
+The **YOUR-RUN, PEND-RES, PEND-OTHR**, and **YOUR-TOTL** columns shows the counts of the running,
  resource pending, other pending, and total job count of the current user, respectively.
  If these four columns are have same values, These same values of that four columns will be
  shown at COMMON VALUES as four single values.
@@ -139,6 +139,8 @@ Parameters:
  
  **-t**	the time info will be shown at DAY-HR:MN format, instead of verbal format.
 
+ **-s** the simple output. spart don't show slurm config columns.
+
  **-J**	the output does not shown the info about the user's jobs.
 
  **-f** the ouput shows each FEATURES defined in that partition and (in paranteses)
@@ -167,8 +169,8 @@ $ spart -l
    coronaq   g      0   1400      0   1400      0     35 ||    1      -     7 days     7 days       40        190 -
        all   .     72   4380      0      0      3    143 ||    1      -     1 days     -         24-40     62-510 gpu:k20m:1(4),gpu:v100:4(1)
 
-                  YOUR YOUR YOUR YOUR MAXCPU DEFMEM MAXMEM    QOS
-                   RUN PEND OTHR TOTL  /NODE G/NODE G/NODE   NAME
+                  YOUR PEND PEND YOUR MAXCPU DEFMEM MAXMEM    QOS
+                   RUN  RES OTHR TOTL  /NODE G/NODE G/NODE   NAME
    COMMON VALUES:    0    0    0    0      -      -      -      -
 
 ```
@@ -193,8 +195,8 @@ $ spart -i
    core40q   C      0   1400      0      0      0     35 ||     1      -     7 days     40    190
    coronaq   g      0   1400      0   1400      0     35 ||     1      -     7 days     40    190
 
-                  YOUR YOUR YOUR YOUR
-                   RUN PEND OTHR TOTL
+                  YOUR PEND PEND YOUR
+                   RUN  RES OTHR TOTL
    COMMON VALUES:    0    0    0    0
 
 ```
