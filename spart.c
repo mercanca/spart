@@ -194,7 +194,7 @@ int spart_usage() {
 #ifdef SPART_COMPILE_FOR_UHEM
   printf("This is UHeM Version of the spart command.\n");
 #endif
-  printf("spart version 1.2.2\n\n");
+  printf("spart version 1.2.3\n\n");
   exit(1);
 }
 
@@ -819,8 +819,9 @@ void partition_print(spart_info_t *sp, sp_headers_t *sph, int show_max_mem,
     if (sph->partition_qos.visible)
       printf("%*s ", sph->partition_qos.column_width, sp->partition_qos);
 
-    if (sph->gres.visible) printf("%-*s ",sph->gres.column_width, sp->gres);
-    if (sph->features.visible) printf("%-*s ",sph->features.column_width, sp->features);
+    if (sph->gres.visible) printf("%-*s ", sph->gres.column_width, sp->gres);
+    if (sph->features.visible)
+      printf("%-*s ", sph->features.column_width, sp->features);
     printf("\n");
 #ifdef SPART_SHOW_STATEMENT
     if (sp->show_statement && !(sph->hspace.visible)) {
@@ -846,7 +847,7 @@ int main(int argc, char *argv[]) {
   node_info_msg_t *node_buffer_ptr = NULL;
   job_info_msg_t *job_buffer_ptr = NULL;
 
-#if SLURM_VERSION_NUMBER > SLURM_VERSION_NUM(18, 7, 0) && \
+#if SLURM_VERSION_NUMBER > SLURM_VERSION_NUM(18, 7, 0) &&  \
     SLURM_VERSION_NUMBER != SLURM_VERSION_NUM(20, 2, 0) && \
     SLURM_VERSION_NUMBER != SLURM_VERSION_NUM(20, 2, 1)
   void **db_conn = NULL;
@@ -1076,21 +1077,22 @@ int main(int argc, char *argv[]) {
 
     /* to check that can we read pending jobs info */
     if (conf_info_msg_ptr->private_data & PRIVATE_DATA_JOBS) {
-      printf("\tthe spart can not show other users' waiting jobs info!\n\n");
+      printf("\tthe spart can not show other users' waiting jobs info!\n");
     }
 
     /* to check that can we read pending jobs info */
     if (conf_info_msg_ptr->private_data & PRIVATE_DATA_NODES) {
-      printf("\tthe spart can not show node status info!\n\n");
+      printf("\tthe spart can not show node status info!\n");
     }
 
     /* to check that can we read pending jobs info */
     if (conf_info_msg_ptr->private_data & PRIVATE_DATA_PARTITIONS) {
-      printf("\tthe spart can not show partition info!\n\n");
+      printf("\tthe spart can not show partition info!\n");
     }
+    printf("\n");
   }
 
-#if SLURM_VERSION_NUMBER > SLURM_VERSION_NUM(18, 7, 0) && \
+#if SLURM_VERSION_NUMBER > SLURM_VERSION_NUM(18, 7, 0) &&  \
     SLURM_VERSION_NUMBER != SLURM_VERSION_NUM(20, 2, 0) && \
     SLURM_VERSION_NUMBER != SLURM_VERSION_NUM(20, 2, 1)
   /* Getting user account info */
@@ -1134,7 +1136,7 @@ int main(int argc, char *argv[]) {
     }
     printf("\n");
     printf(" Your account(s): ");
-#if SLURM_VERSION_NUMBER > SLURM_VERSION_NUM(18, 7, 0) && \
+#if SLURM_VERSION_NUMBER > SLURM_VERSION_NUM(18, 7, 0) &&  \
     SLURM_VERSION_NUMBER != SLURM_VERSION_NUM(20, 2, 0) && \
     SLURM_VERSION_NUMBER != SLURM_VERSION_NUM(20, 2, 1)
     for (k = 0; k < user_acct_count; k++) {
@@ -1259,7 +1261,10 @@ int main(int argc, char *argv[]) {
               (job_buffer_ptr->job_array[i].job_state == JOB_RUNNING))
             spData[j].my_running++;
         }
-        if (job_buffer_ptr->job_array[i].user_id == user_id)
+        if ((job_buffer_ptr->job_array[i].user_id == user_id) &&
+            ((job_buffer_ptr->job_array[i].job_state == JOB_PENDING) ||
+             (job_buffer_ptr->job_array[i].job_state == JOB_RUNNING) ||
+             (job_buffer_ptr->job_array[i].job_state == JOB_SUSPENDED)))
           spData[j].my_total++;
       }
     }
@@ -1355,7 +1360,7 @@ int main(int argc, char *argv[]) {
     if (part_ptr->flags & PART_FLAG_HIDDEN)
       strncat(spData[i].partition_status, ".", SPART_MAX_COLUMN_SIZE);
 
-#if SLURM_VERSION_NUMBER > SLURM_VERSION_NUM(18, 7, 0) && \
+#if SLURM_VERSION_NUMBER > SLURM_VERSION_NUM(18, 7, 0) &&  \
     SLURM_VERSION_NUMBER != SLURM_VERSION_NUM(20, 2, 0) && \
     SLURM_VERSION_NUMBER != SLURM_VERSION_NUM(20, 2, 1)
     if ((part_ptr->allow_accounts != NULL) &&
@@ -2069,7 +2074,7 @@ int main(int argc, char *argv[]) {
     pclose(fo);
   }
 #endif
-#if SLURM_VERSION_NUMBER > SLURM_VERSION_NUM(18, 7, 0) && \
+#if SLURM_VERSION_NUMBER > SLURM_VERSION_NUM(18, 7, 0) &&  \
     SLURM_VERSION_NUMBER != SLURM_VERSION_NUM(20, 2, 0) && \
     SLURM_VERSION_NUMBER != SLURM_VERSION_NUM(20, 2, 1)
   /* free allocations */
