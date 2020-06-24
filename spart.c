@@ -195,7 +195,7 @@ int spart_usage() {
 #ifdef SPART_COMPILE_FOR_UHEM
   printf("This is UHeM Version of the spart command.\n");
 #endif
-  printf("spart version 1.3.0\n\n");
+  printf("spart version 1.3.1\n\n");
   exit(1);
 }
 
@@ -1670,7 +1670,12 @@ int main(int argc, char *argv[]) {
   /* Common Values scanning */
   /* reuse local show_xxx variables for different purpose */
   show_all_partition = 0; /* are there common feature */
-  if (!show_simple) {
+  if (show_simple) {
+    total_width += spheaders.my_running.column_width +
+                   spheaders.my_waiting_resource.column_width +
+                   spheaders.my_waiting_other.column_width +
+                   spheaders.my_total.column_width + 4;
+  } else {
     k = -1; /* first visible row (partition) */
     for (i = 0; i < partition_count; i++)
       if ((spData[i].visible) && (k == -1)) {
