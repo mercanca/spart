@@ -195,7 +195,7 @@ int spart_usage() {
 #ifdef SPART_COMPILE_FOR_UHEM
   printf("This is UHeM Version of the spart command.\n");
 #endif
-  printf("spart version 1.3.1\n\n");
+  printf("spart version 1.3.2\n\n");
   exit(1);
 }
 

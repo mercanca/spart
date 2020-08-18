@@ -314,15 +314,17 @@ Compiling is very simple.
 
 If your slurm installed at default location, you can compile the spart command as below:
 
- ```gcc -lslurm -lslurmdb spart.c -o spart```
- 
-At SLURM 19.05 and later, you should compile without **-libslurmdb**:
- 
  ```gcc -lslurm spart.c -o spart```
+ 
+At before SLURM 19.05, you should compile with **-lslurmdb**:
+ 
+ ```gcc -lslurm -lslurmdb spart.c -o spart```
 
 If the slurm is not installed at default location, you should add locations of the headers and libraries:
 
  ```gcc -lslurm -lslurmdb spart.c -o spart -I/location/of/slurm/header/files/ -L/location/of/slurm/library/files/```
+
+After compiling, you can copy the spart file to the default slurm exe directory which is /usr/bin. Alternatively, you can copy spart file to any directory and you should set PATH environment variable. The default slurm man directory is /usr/share/man/man1/. You can copy the man file (spart.1.gz) to this directory, or you can set MANPATH variable. Don't forget to set reading perpisions of the spart and spart.1.gz files for all users.
 
  
 Also, there is no need to have administrative rights (being root) to compile and use. If you want to use
