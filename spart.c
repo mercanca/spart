@@ -1238,7 +1238,7 @@ int main(int argc, char *argv[]) {
 #ifdef SPART_SHOW_STATEMENT
   if (show_info) {
     printf("\n  %s ", SPART_STATEMENT_LINEPRE);
-    seperator_print('=', total_width);
+    sp_seperator_print('=', total_width);
     printf(" %s\n\n", SPART_STATEMENT_LINEPOST);
   }
 #endif
@@ -1318,7 +1318,7 @@ int main(int argc, char *argv[]) {
   fo = fopen(SPART_STATEMENT_DIR SPART_STATEMENT_FILE, "r");
   if (fo) {
     printf("\n  %s ", SPART_STATEMENT_LINEPRE);
-    seperator_print('=', total_width);
+    sp_seperator_print('=', total_width);
     printf(" %s\n", SPART_STATEMENT_LINEPOST);
     while (fgets(re_str, SPART_INFO_STRING_SIZE, fo)) {
       /* To correctly frame some wide chars, but not all */
@@ -1331,7 +1331,7 @@ int main(int argc, char *argv[]) {
              SPART_STATEMENT_LINEPOST);
     }
     printf("  %s ", SPART_STATEMENT_LINEPRE);
-    seperator_print('=', total_width);
+    sp_seperator_print('=', total_width);
     printf(" %s\n", SPART_STATEMENT_LINEPOST);
     pclose(fo);
   }
