@@ -1,7 +1,7 @@
 # run "spectool -g -R spart.spec" to automatically download source files
 # spectool is part of the rpmdevtools package
 Name:       spart
-Version:    1.3.2
+Version:    1.3.3
 Release:    1%{?dist}
 Summary:    A tool to display user-oriented Slurm partition information.
 
@@ -26,10 +26,12 @@ gcc -lslurm %{name}.c -o %{name}
 %install
 mkdir -p %{buildroot}%{_bindir}
 install -m 0755 ./%{name} %{buildroot}%{_bindir}/%{name}
+install -m 0644 ./%{name}.1.gz %{_mandir}/man1/%{name}.1.gz
 
 %files
 %defattr(755,root,root)
 %{_bindir}/%{name}
+%{_mandir}/man1/%{name}.1.gz
 
 
 %changelog
