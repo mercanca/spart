@@ -205,10 +205,11 @@ $ spart -i
 
 When STATEMENT feature is on, the spart looks for the statements files. To open the STATEMENT 
  feature, the **SPART_SHOW_STATEMENT** macro must be defined that can be achieved when you 
- uncomment line 21. If the spart finds any statement file, it shows the content of the files.
- If the spart can not find a particular staement file, simply ignore it without the notification.
- Therefore, there is no need to recompile to reshow or cancel statements. You can edit or remove
- statement files after compiling. If you want to show again, just write new file(s).
+ uncomment line 24 in spart.h file. If the spart finds any statement file, it shows the content 
+ of the files. If the spart can not find a particular staement file, simply ignore it without
+ the notification. Therefore, there is no need to recompile to reshow or cancel statements.
+ You can edit or remove statement files after compiling. If you want to show again, just write
+ new file(s).
 
 The spart also can show the statements using different font sytles and background colors. The 
  style of the cluster's statement and the partitions' statements can be setted differently.
