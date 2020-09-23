@@ -297,7 +297,7 @@ $ spart -i
 
 ## Requirements
 
-The spart requires a running slurm which compiled with mysql.
+The spart requires a running slurm which compiled with mysql/mariadb.
 
 Some features of the spart requires Slurm 18.08 or newer. With older versions, the spart works with
  reduced feature set i.e. without showing the federated clusters column and user-spesific output.
@@ -316,6 +316,8 @@ Compiling is very simple.
 If your slurm installed at default location, you can compile the spart command as below:
 
  ```gcc -lslurm spart.c -o spart```
+
+Don't add optimization flags (-O2 etc.).
  
 At before SLURM 19.05, you should compile with **-lslurmdb**:
  

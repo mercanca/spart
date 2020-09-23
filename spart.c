@@ -22,7 +22,7 @@
 /* ========== MAIN ========== */
 int main(int argc, char *argv[]) {
   uint32_t i, j;
-  int k, m;
+  int k, m, n;
   int total_width = 0;
 
   /* Slurm defined types */
@@ -39,8 +39,20 @@ int main(int argc, char *argv[]) {
   slurmdb_assoc_cond_t assoc_cond;
   List assoc_list = NULL;
   ListIterator itr = NULL;
+
+  slurmdb_qos_cond_t qosn_cond;
+  List qosn_list = NULL;
+  ListIterator itr_qosn = NULL;
+
+  slurmdb_qos_rec_t *qosn;
   slurmdb_assoc_rec_t *assoc;
 
+  List qos_list = NULL;
+  ListIterator itr_qos = NULL;
+  int qosn_count = 0;
+
+  char *qos = NULL;
+  char *qos2 = NULL;
   int user_acct_count = 0;
   char **user_acct = NULL;
 #endif
@@ -328,15 +340,53 @@ int main(int argc, char *argv[]) {
 
   user_acct_count = slurm_list_count(assoc_list);
   user_acct = malloc(user_acct_count * sizeof(char *));
+  user_qos_count = 0;
+
+  for (k = 0; k < user_acct_count; k++) {
+    assoc = slurm_list_next(itr);
+    qos_list = assoc->qos_list;
+    user_qos_count += slurm_list_count(qos_list);
+  }
+
+  // user_qos_count = user_acct_count*4;
+  user_qos = malloc(user_qos_count * sizeof(char *));
+
+  qosn_list = slurmdb_qos_get(db_conn, NULL);
+  itr_qosn = slurm_list_iterator_create(qosn_list);
+  qosn_count = slurm_list_count(qosn_list);
+
+  // qosn = slurm_list_next(itr_qosn);
+  // printf("QOS %s QOSid: %d\n", qosn->name, qosn->id);
+
+  n = 0;
+  slurm_list_iterator_reset(itr);
   for (k = 0; k < user_acct_count; k++) {
     user_acct[k] = malloc(SPART_INFO_STRING_SIZE * sizeof(char));
     assoc = slurm_list_next(itr);
     sp_strn2cpy(user_acct[k], SPART_INFO_STRING_SIZE, assoc->acct,
                 SPART_INFO_STRING_SIZE);
+
+    qos_list = assoc->qos_list;
+    user_qos_count = slurm_list_count(qos_list);
+    if (user_qos_count > 0) {
+      itr_qos = slurm_list_iterator_create(qos_list);
+      for (m = 0; m < user_qos_count; m++) {
+        user_qos[n] = malloc(SPART_INFO_STRING_SIZE * sizeof(char));
+        qos = slurm_list_next(itr_qos);
+        qos2 = slurmdb_qos_str(qosn_list, atoi(qos));
+        sp_strn2cpy(user_qos[n], SPART_INFO_STRING_SIZE, qos2,
+                    SPART_INFO_STRING_SIZE);
+        n++;
+      }
+    }
   }
 
   slurm_list_iterator_destroy(itr);
+  slurm_list_iterator_destroy(itr_qos);
+  // slurm_list_destroy(qos_list);
   slurm_list_destroy(assoc_list);
+  slurm_list_iterator_destroy(itr_qosn);
+  slurm_list_destroy(qosn_list);
 #endif
 
   char sh_str[SPART_INFO_STRING_SIZE];
@@ -352,14 +402,20 @@ int main(int argc, char *argv[]) {
       printf("%s ", user_group[k]);
     }
     printf("\n");
-    printf(" Your account(s): ");
 #if SLURM_VERSION_NUMBER > SLURM_VERSION_NUM(18, 7, 0) &&  \
     SLURM_VERSION_NUMBER != SLURM_VERSION_NUM(20, 2, 0) && \
     SLURM_VERSION_NUMBER != SLURM_VERSION_NUM(20, 2, 1)
+    printf(" Your account(s): ");
     for (k = 0; k < user_acct_count; k++) {
       printf("%s ", user_acct[k]);
     }
+    printf("\n Your qos(s): ");
+    for (k = 0; k < user_qos_count; k++) {
+      printf("%s ", user_qos[k]);
+    }
+    printf("\n");
 #else
+    printf(" Your account(s): ");
     /* run sacctmgr command to get associations from old slurm */
     snprintf(sh_str, SPART_INFO_STRING_SIZE,
              "sacctmgr list association format=account%%-30 where user=%s "
@@ -372,36 +428,36 @@ int main(int argc, char *argv[]) {
     }
     pclose(fo);
 
-#endif
     printf("\n Your qos(s): ");
-  }
-  snprintf(sh_str, SPART_INFO_STRING_SIZE,
-           "sacctmgr list association format=qos%%-30 where user=%s -n "
-           "2>/dev/null |tr -s '\n, ' ' '",
-           user_name);
-  fo = popen(sh_str, "r");
-  if (fo) {
-    fgets(re_str, SPART_INFO_STRING_SIZE, fo);
-    if (show_info) printf("%s", re_str);
-    if (show_info) printf("\n\n");
-    if (re_str[0] == '\0')
-      user_qos_count = 1;
-    else
-      user_qos_count = 0;
-    k = 0;
-    for (j = 0; re_str[j]; j++)
-      if (re_str[j] == ' ') user_qos_count++;
+    snprintf(sh_str, SPART_INFO_STRING_SIZE,
+             "sacctmgr list association format=qos%%-30 where user=%s -n "
+             "2>/dev/null |tr -s '\n, ' ' '",
+             user_name);
+    fo = popen(sh_str, "r");
+    if (fo) {
+      fgets(re_str, SPART_INFO_STRING_SIZE, fo);
+      if (show_info) printf("%s", re_str);
+      if (show_info) printf("\n\n");
+      if (re_str[0] == '\0')
+        user_qos_count = 1;
+      else
+        user_qos_count = 0;
+      k = 0;
+      for (j = 0; re_str[j]; j++)
+        if (re_str[j] == ' ') user_qos_count++;
 
-    user_qos = malloc(user_qos_count * sizeof(char *));
-    for (p_str = strtok_r(re_str, " ", &t_str); p_str != NULL;
-         p_str = strtok_r(NULL, " ", &t_str)) {
-      user_qos[k] = malloc(SPART_INFO_STRING_SIZE * sizeof(char));
-      sp_strn2cpy(user_qos[k], SPART_INFO_STRING_SIZE, p_str,
-                  SPART_INFO_STRING_SIZE);
-      k++;
+      user_qos = malloc(user_qos_count * sizeof(char *));
+      for (p_str = strtok_r(re_str, " ", &t_str); p_str != NULL;
+           p_str = strtok_r(NULL, " ", &t_str)) {
+        user_qos[k] = malloc(SPART_INFO_STRING_SIZE * sizeof(char));
+        sp_strn2cpy(user_qos[k], SPART_INFO_STRING_SIZE, p_str,
+                    SPART_INFO_STRING_SIZE);
+        k++;
+      }
     }
+    pclose(fo);
+#endif
   }
-  pclose(fo);
 
   /* if (db_conn != NULL)
     slurmdb_connection_close(db_conn); */

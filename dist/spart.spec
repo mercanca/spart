@@ -1,7 +1,7 @@
 # run "spectool -g -R spart.spec" to automatically download source files
 # spectool is part of the rpmdevtools package
 Name:       spart
-Version:    1.3.4
+Version:    1.3.5
 Release:    1%{?dist}
 Summary:    A tool to display user-oriented Slurm partition information.
 
