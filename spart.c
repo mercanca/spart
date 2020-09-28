@@ -40,22 +40,26 @@ int main(int argc, char *argv[]) {
   List assoc_list = NULL;
   ListIterator itr = NULL;
 
-  slurmdb_qos_cond_t qosn_cond;
   List qosn_list = NULL;
   ListIterator itr_qosn = NULL;
 
-  slurmdb_qos_rec_t *qosn;
   slurmdb_assoc_rec_t *assoc;
 
   List qos_list = NULL;
   ListIterator itr_qos = NULL;
-  int qosn_count = 0;
 
   char *qos = NULL;
   char *qos2 = NULL;
+#else
+  char sh_str[SPART_INFO_STRING_SIZE];
+  char *p_str = NULL;
+  char *t_str = NULL;
+#endif
+  char re_str[SPART_INFO_STRING_SIZE];
+  FILE *fo;
+
   int user_acct_count = 0;
   char **user_acct = NULL;
-#endif
 
   int user_qos_count = 0;
   char **user_qos = NULL;
@@ -136,12 +140,6 @@ int main(int argc, char *argv[]) {
   sp_headers_t spheaders;
 
   legends[0] = 0;
-
-  char sh_str[SPART_INFO_STRING_SIZE];
-  char re_str[SPART_INFO_STRING_SIZE];
-  FILE *fo;
-  char *p_str = NULL;
-  char *t_str = NULL;
 
   int show_info = 0;
   /* Get username */
@@ -363,15 +361,10 @@ int main(int argc, char *argv[]) {
     user_qos_count += slurm_list_count(qos_list);
   }
 
-  // user_qos_count = user_acct_count*4;
   user_qos = malloc(user_qos_count * sizeof(char *));
 
   qosn_list = slurmdb_qos_get(db_conn, NULL);
   itr_qosn = slurm_list_iterator_create(qosn_list);
-  qosn_count = slurm_list_count(qosn_list);
-
-  // qosn = slurm_list_next(itr_qosn);
-  // printf("QOS %s QOSid: %d\n", qosn->name, qosn->id);
 
   n = 0;
   slurm_list_iterator_reset(itr);
@@ -402,6 +395,59 @@ int main(int argc, char *argv[]) {
   slurm_list_destroy(assoc_list);
   slurm_list_iterator_destroy(itr_qosn);
   slurm_list_destroy(qosn_list);
+#else
+  snprintf(sh_str, SPART_INFO_STRING_SIZE,
+           "sacctmgr list association format=account%%-30 where user=%s -n "
+           "2>/dev/null |tr -s '\n, ' ' '",
+           user_name);
+  fo = popen(sh_str, "r");
+  if (fo) {
+    fgets(re_str, SPART_INFO_STRING_SIZE, fo);
+    if (re_str[0] == '\0')
+      user_acct_count = 1;
+    else
+      user_acct_count = 0;
+    k = 0;
+    for (j = 0; re_str[j]; j++)
+      if (re_str[j] == ' ') user_acct_count++;
+
+    user_acct = malloc(user_acct_count * sizeof(char *));
+    for (p_str = strtok_r(re_str, " ", &t_str); p_str != NULL;
+         p_str = strtok_r(NULL, " ", &t_str)) {
+      user_acct[k] = malloc(SPART_INFO_STRING_SIZE * sizeof(char));
+      sp_strn2cpy(user_acct[k], SPART_INFO_STRING_SIZE, p_str,
+                  SPART_INFO_STRING_SIZE);
+      k++;
+    }
+  }
+  pclose(fo);
+
+  snprintf(sh_str, SPART_INFO_STRING_SIZE,
+           "sacctmgr list association format=qos%%-30 where user=%s -n "
+           "2>/dev/null |tr -s '\n, ' ' '",
+           user_name);
+  fo = popen(sh_str, "r");
+  if (fo) {
+    fgets(re_str, SPART_INFO_STRING_SIZE, fo);
+    if (re_str[0] == '\0')
+      user_qos_count = 1;
+    else
+      user_qos_count = 0;
+    k = 0;
+    for (j = 0; re_str[j]; j++)
+      if (re_str[j] == ' ') user_qos_count++;
+
+    user_qos = malloc(user_qos_count * sizeof(char *));
+    for (p_str = strtok_r(re_str, " ", &t_str); p_str != NULL;
+         p_str = strtok_r(NULL, " ", &t_str)) {
+      user_qos[k] = malloc(SPART_INFO_STRING_SIZE * sizeof(char));
+      sp_strn2cpy(user_qos[k], SPART_INFO_STRING_SIZE, p_str,
+                  SPART_INFO_STRING_SIZE);
+      k++;
+    }
+  }
+  pclose(fo);
+
 #endif
 
   if (show_info) {
@@ -589,25 +635,30 @@ int main(int argc, char *argv[]) {
     SLURM_VERSION_NUMBER != SLURM_VERSION_NUM(20, 2, 0) && \
     SLURM_VERSION_NUMBER != SLURM_VERSION_NUM(20, 2, 1)
 
-    k=sp_check_permision_set_legend(part_ptr->allow_accounts, user_acct, user_acct_count,
-            spData[i].partition_status,NULL,"a","A");
-    if ((!show_all_partition)&&(k==0)) spData[i].visible = 0;
-     
-    k=sp_check_permision_set_legend(part_ptr->deny_accounts, user_acct, user_acct_count,
-            spData[i].partition_status,"A","a",NULL);
-    if ((!show_all_partition)&&(k==0)) spData[i].visible = 0;
-     
-    k=sp_check_permision_set_legend(part_ptr->allow_qos, user_qos, user_qos_count,
-            spData[i].partition_status,NULL,"q","Q");
-    if ((!show_all_partition)&&(k==0)) spData[i].visible = 0;
-     
-    k=sp_check_permision_set_legend(part_ptr->deny_qos, user_qos, user_qos_count,
-            spData[i].partition_status,"Q","q",NULL);
-    if ((!show_all_partition)&&(k==0)) spData[i].visible = 0;
-     
-    k=sp_check_permision_set_legend(part_ptr->allow_groups, user_group, user_group_count,
-            spData[i].partition_status,NULL,"a","A");
-    if ((!show_all_partition)&&(k==0)) spData[i].visible = 0;
+    k = sp_check_permision_set_legend(
+        part_ptr->allow_accounts, user_acct, user_acct_count,
+        spData[i].partition_status, NULL, "a", "A");
+    if ((!show_all_partition) && (k == 0)) spData[i].visible = 0;
+
+    k = sp_check_permision_set_legend(
+        part_ptr->deny_accounts, user_acct, user_acct_count,
+        spData[i].partition_status, "A", "a", NULL);
+    if ((!show_all_partition) && (k == 0)) spData[i].visible = 0;
+
+    k = sp_check_permision_set_legend(
+        part_ptr->allow_qos, user_qos, user_qos_count,
+        spData[i].partition_status, NULL, "q", "Q");
+    if ((!show_all_partition) && (k == 0)) spData[i].visible = 0;
+
+    k = sp_check_permision_set_legend(
+        part_ptr->deny_qos, user_qos, user_qos_count,
+        spData[i].partition_status, "Q", "q", NULL);
+    if ((!show_all_partition) && (k == 0)) spData[i].visible = 0;
+
+    k = sp_check_permision_set_legend(
+        part_ptr->allow_groups, user_group, user_group_count,
+        spData[i].partition_status, NULL, "a", "A");
+    if ((!show_all_partition) && (k == 0)) spData[i].visible = 0;
 
 #endif
 
@@ -1297,15 +1348,15 @@ int main(int argc, char *argv[]) {
     pclose(fo);
   }
 #endif
-#if SLURM_VERSION_NUMBER > SLURM_VERSION_NUM(18, 7, 0) &&  \
-    SLURM_VERSION_NUMBER != SLURM_VERSION_NUM(20, 2, 0) && \
-    SLURM_VERSION_NUMBER != SLURM_VERSION_NUM(20, 2, 1)
   /* free allocations */
   for (k = 0; k < user_acct_count; k++) {
     free(user_acct[k]);
   }
   free(user_acct);
-#endif
+  for (k = 0; k < user_qos_count; k++) {
+    free(user_qos[k]);
+  }
+  free(user_qos);
   for (k = 0; k < user_group_count; k++) {
     free(user_group[k]);
   }

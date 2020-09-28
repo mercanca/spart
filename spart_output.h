@@ -550,9 +550,10 @@ void sp_partition_print(sp_part_info_t *sp, sp_headers_t *sph, int show_max_mem,
 }
 
 /* print user info  ( -i parameter output ) */
-sp_print_user_info(char *user_name, char **user_group, int user_group_count,
-                   char **user_acct, int user_acct_count, char **user_qos,
-                   int user_qos_count) {
+void sp_print_user_info(char *user_name, char **user_group,
+                        int user_group_count, char **user_acct,
+                        int user_acct_count, char **user_qos,
+                        int user_qos_count) {
   int k;
   printf(" Your username: %s\n", user_name);
   printf(" Your group(s): ");
@@ -560,9 +561,6 @@ sp_print_user_info(char *user_name, char **user_group, int user_group_count,
     printf("%s ", user_group[k]);
   }
   printf("\n");
-#if SLURM_VERSION_NUMBER > SLURM_VERSION_NUM(18, 7, 0) &&  \
-    SLURM_VERSION_NUMBER != SLURM_VERSION_NUM(20, 2, 0) && \
-    SLURM_VERSION_NUMBER != SLURM_VERSION_NUM(20, 2, 1)
   printf(" Your account(s): ");
   for (k = 0; k < user_acct_count; k++) {
     printf("%s ", user_acct[k]);
@@ -572,49 +570,6 @@ sp_print_user_info(char *user_name, char **user_group, int user_group_count,
     printf("%s ", user_qos[k]);
   }
   printf("\n");
-#else
-  printf(" Your account(s): ");
-  /* run sacctmgr command to get associations from old slurm */
-  snprintf(sh_str, SPART_INFO_STRING_SIZE,
-           "sacctmgr list association format=account%%-30 where user=%s "
-           "-n 2>/dev/null|tr -s '\n' ' '",
-           user_name);
-  fo = popen(sh_str, "r");
-  if (fo) {
-    fgets(re_str, SPART_INFO_STRING_SIZE, fo);
-    printf("%s", re_str);
-  }
-  pclose(fo);
-
-  printf("\n Your qos(s): ");
-  snprintf(sh_str, SPART_INFO_STRING_SIZE,
-           "sacctmgr list association format=qos%%-30 where user=%s -n "
-           "2>/dev/null |tr -s '\n, ' ' '",
-           user_name);
-  fo = popen(sh_str, "r");
-  if (fo) {
-    fgets(re_str, SPART_INFO_STRING_SIZE, fo);
-    if (show_info) printf("%s", re_str);
-    if (show_info) printf("\n\n");
-    if (re_str[0] == '\0')
-      user_qos_count = 1;
-    else
-      user_qos_count = 0;
-    k = 0;
-    for (j = 0; re_str[j]; j++)
-      if (re_str[j] == ' ') user_qos_count++;
-
-    user_qos = malloc(user_qos_count * sizeof(char *));
-    for (p_str = strtok_r(re_str, " ", &t_str); p_str != NULL;
-         p_str = strtok_r(NULL, " ", &t_str)) {
-      user_qos[k] = malloc(SPART_INFO_STRING_SIZE * sizeof(char));
-      sp_strn2cpy(user_qos[k], SPART_INFO_STRING_SIZE, p_str,
-                  SPART_INFO_STRING_SIZE);
-      k++;
-    }
-  }
-  pclose(fo);
-#endif
 }
 
 #endif /* SPART_SPART_OUTPUT_H_incl */
