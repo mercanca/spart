@@ -46,4 +46,41 @@ void sp_gres_reset_counts(sp_gres_info_t *spga, uint16_t *sp_gres_count) {
   (*sp_gres_count) = 0;
 }
 
+/* it checks for permision string for user_spec list, return 0 if partition
+ * should be hide */
+int sp_check_permision_set_legend(char *permisions, char **user_spec,
+                                  int user_spec_count, char *legendstr,
+                                  const char *r_all, const char *r_some,
+                                  const char *r_none) {
+  int found_count;
+  char strtmp[SPART_INFO_STRING_SIZE];
+  if ((permisions != NULL) && (strlen(permisions) != 0)) {
+    sp_strn2cpy(strtmp, SPART_INFO_STRING_SIZE, permisions,
+                SPART_INFO_STRING_SIZE);
+    found_count = sp_account_check(user_spec, user_spec_count, strtmp);
+    if (found_count) {
+      /* more than zero in the list */
+      if (found_count != user_spec_count) {
+        /* partial match */
+        sp_strn2cat(legendstr, SPART_MAX_COLUMN_SIZE, r_some, 1);
+      } else {
+        /* found_count = ALL */
+        if (r_all != NULL) {
+          /* this is an deny list */
+          sp_strn2cat(legendstr, SPART_MAX_COLUMN_SIZE, r_all, 1);
+          return 0;
+        }
+      }
+    } else {
+      /* found_count = 0 */
+      if (r_none != NULL) {
+        /* this is an allow list */
+        sp_strn2cat(legendstr, SPART_MAX_COLUMN_SIZE, r_none, 1);
+        return 0;
+      }
+    }
+  }
+  return 1;
+}
+
 #endif /* SPART_SPART_DATA_H_incl */

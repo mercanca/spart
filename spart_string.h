@@ -74,4 +74,18 @@ int sp_account_check(char **key_list, int key_count, char *comma_sep_str) {
   return parti;
 }
 
+/* Search for chr in str. If not fund, adds chr to str. */
+void sp_char_check(char *str, int nstr, const char *chr, int nchr) {
+  char c[2];
+  int l = strnlen(chr, nchr);
+  int i = 0;
+  c[1] = 0;
+  for (i = 0; i < l; i++) {
+    c[0] = chr[i];
+    if (strstr(str, c) == NULL) {
+      sp_strn2cat(str, nstr, c, 1);
+    }
+  }
+}
+
 #endif /* SPART_SPART_STRING_H_incl */

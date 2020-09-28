@@ -74,6 +74,22 @@
 #define SPART_MAX_COLUMN_SIZE 64
 #define SPART_MAX_GROUP_SIZE 32
 
+char *legend_info[] = {
+    "* : default partition (default queue)",
+    ". : hidden partition",
+    "C : closed to both the job submit and run",
+    "S : closed to the job submit, but the submitted jobs will run",
+    "r : requires the reservation",
+    "D : open to the job submit, but the submitted jobs will not run",
+    "R : open for only root, or closed to root (if you are root)",
+    "A : closed to all of your account(s)",
+    "a : closed to some of your account(s)",
+    "G : closed to all of your group(s)",
+    "g : closed to some of your group(s)",
+    "Q : closed to all of your QOS(s)",
+    "q : closed to some of your QOS(s)"};
+int legend_count = 12;
+
 /* Prints Command Usage and Exit */
 int sp_spart_usage() {
   printf(
@@ -81,7 +97,7 @@ int sp_spart_usage() {
 #ifdef __slurmdb_cluster_rec_t_defined
       "[-c] "
 #endif
-      "[-g] [-i] [-t] [-f] [-l] [-s] [-J] [-h]\n\n");
+      "[-g] [-i] [-t] [-f] [-l] [-s] [-J] [-v] [-h]\n\n");
   printf(
       "This program shows brief partition info with core count of available "
       "nodes and pending jobs.\n\n");
@@ -194,11 +210,12 @@ int sp_spart_usage() {
   printf(
       "\t-l\tall posible columns will be shown, except"
       " the federated clusters column.\n\n");
+  printf("\t-v\tshows info about STATUS LABELS.\n\n");
   printf("\t-h\tshows this usage text.\n\n");
 #ifdef SPART_COMPILE_FOR_UHEM
   printf("This is UHeM Version of the spart command.\n");
 #endif
-  printf("spart version 1.3.5\n\n");
+  printf("spart version 1.4.0\n\n");
   exit(1);
 }
 

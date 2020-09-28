@@ -6,7 +6,7 @@
 
 ## Usage
 
- **Usage: spart [-m] [-a] [-c] [-g] [-i] [-t] [-f] [-s] [-J] [-l] [-h]**
+ **Usage: spart [-m] [-a] [-c] [-g] [-i] [-t] [-f] [-s] [-J] [-l] [-v] [-h]**
 
  This program shows **the user specific partition info** with core count of available nodes and pending jobs. It hides unnecessary information for users in the output i.e. unusable partitions, undefined limits, unusable nodes etc., but it shows related and usefull information such as how many pending jobs waiting for the resourses or for the other reasons.
 
@@ -147,6 +147,8 @@ Parameters:
 		the total number of nodes in that partition containing that FEATURES.
 
  **-l**	all posible columns will be shown, except the federated clusters column.
+
+ **-v** shows info about STATUS LABELS.
 
  **-h**	shows this usage text.
 

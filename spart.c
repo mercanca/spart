@@ -80,6 +80,7 @@ int main(int argc, char *argv[]) {
   char strtmp[SPART_INFO_STRING_SIZE];
   char user_name[SPART_INFO_STRING_SIZE];
   int user_id;
+  char legends[SPART_INFO_STRING_SIZE];
 #ifdef __slurmdb_cluster_rec_t_defined
   char cluster_name[SPART_INFO_STRING_SIZE];
 #endif
@@ -113,6 +114,7 @@ int main(int argc, char *argv[]) {
   int show_my_waiting_other = 1;
   int show_my_total = 1;
   int show_simple = 0;
+  int show_verbose = 0;
 
   uint16_t partname_lenght = 0;
 #ifdef __slurmdb_cluster_rec_t_defined
@@ -132,6 +134,14 @@ int main(int argc, char *argv[]) {
   sp_gres_info_t spfeatures[SPART_GRES_ARRAY_SIZE];
 
   sp_headers_t spheaders;
+
+  legends[0] = 0;
+
+  char sh_str[SPART_INFO_STRING_SIZE];
+  char re_str[SPART_INFO_STRING_SIZE];
+  FILE *fo;
+  char *p_str = NULL;
+  char *t_str = NULL;
 
   int show_info = 0;
   /* Get username */
@@ -204,6 +214,11 @@ int main(int argc, char *argv[]) {
 
     if (strncmp(argv[k], "-i", 3) == 0) {
       show_info = 1;
+      continue;
+    }
+
+    if (strncmp(argv[k], "-v", 3) == 0) {
+      show_verbose = 1;
       continue;
     }
 
@@ -389,78 +404,10 @@ int main(int argc, char *argv[]) {
   slurm_list_destroy(qosn_list);
 #endif
 
-  char sh_str[SPART_INFO_STRING_SIZE];
-  char re_str[SPART_INFO_STRING_SIZE];
-  FILE *fo;
-  char *p_str = NULL;
-  char *t_str = NULL;
-
   if (show_info) {
-    printf(" Your username: %s\n", user_name);
-    printf(" Your group(s): ");
-    for (k = 0; k < user_group_count; k++) {
-      printf("%s ", user_group[k]);
-    }
-    printf("\n");
-#if SLURM_VERSION_NUMBER > SLURM_VERSION_NUM(18, 7, 0) &&  \
-    SLURM_VERSION_NUMBER != SLURM_VERSION_NUM(20, 2, 0) && \
-    SLURM_VERSION_NUMBER != SLURM_VERSION_NUM(20, 2, 1)
-    printf(" Your account(s): ");
-    for (k = 0; k < user_acct_count; k++) {
-      printf("%s ", user_acct[k]);
-    }
-    printf("\n Your qos(s): ");
-    for (k = 0; k < user_qos_count; k++) {
-      printf("%s ", user_qos[k]);
-    }
-    printf("\n");
-#else
-    printf(" Your account(s): ");
-    /* run sacctmgr command to get associations from old slurm */
-    snprintf(sh_str, SPART_INFO_STRING_SIZE,
-             "sacctmgr list association format=account%%-30 where user=%s "
-             "-n 2>/dev/null|tr -s '\n' ' '",
-             user_name);
-    fo = popen(sh_str, "r");
-    if (fo) {
-      fgets(re_str, SPART_INFO_STRING_SIZE, fo);
-      printf("%s", re_str);
-    }
-    pclose(fo);
-
-    printf("\n Your qos(s): ");
-    snprintf(sh_str, SPART_INFO_STRING_SIZE,
-             "sacctmgr list association format=qos%%-30 where user=%s -n "
-             "2>/dev/null |tr -s '\n, ' ' '",
-             user_name);
-    fo = popen(sh_str, "r");
-    if (fo) {
-      fgets(re_str, SPART_INFO_STRING_SIZE, fo);
-      if (show_info) printf("%s", re_str);
-      if (show_info) printf("\n\n");
-      if (re_str[0] == '\0')
-        user_qos_count = 1;
-      else
-        user_qos_count = 0;
-      k = 0;
-      for (j = 0; re_str[j]; j++)
-        if (re_str[j] == ' ') user_qos_count++;
-
-      user_qos = malloc(user_qos_count * sizeof(char *));
-      for (p_str = strtok_r(re_str, " ", &t_str); p_str != NULL;
-           p_str = strtok_r(NULL, " ", &t_str)) {
-        user_qos[k] = malloc(SPART_INFO_STRING_SIZE * sizeof(char));
-        sp_strn2cpy(user_qos[k], SPART_INFO_STRING_SIZE, p_str,
-                    SPART_INFO_STRING_SIZE);
-        k++;
-      }
-    }
-    pclose(fo);
-#endif
+    sp_print_user_info(user_name, user_group, user_group_count, user_acct,
+                       user_acct_count, user_qos, user_qos_count);
   }
-
-  /* if (db_conn != NULL)
-    slurmdb_connection_close(db_conn); */
 
   /* Initialize spart data for each partition */
   partition_count = part_buffer_ptr->record_count;
@@ -580,13 +527,13 @@ int main(int argc, char *argv[]) {
             SELECT_NODEDATA_SUBCNT, NODE_STATE_ALLOCATED, &alloc_cpus);
 
         state = node_buffer_ptr->node_array[k].node_state;
-        /* If gres will not show, don't work */
+        /* If gres will not show, don't run */
         if ((show_gres) && (node_buffer_ptr->node_array[k].gres != NULL)) {
           sp_gres_add(spgres, &sp_gres_count,
                       node_buffer_ptr->node_array[k].gres);
         }
 
-        /* If features will not show, don't work */
+        /* If features will not show, don't run */
         if (show_features) {
           if (node_buffer_ptr->node_array[k].features_act != NULL)
             sp_gres_add(spfeatures, &sp_features_count,
@@ -641,87 +588,26 @@ int main(int argc, char *argv[]) {
 #if SLURM_VERSION_NUMBER > SLURM_VERSION_NUM(18, 7, 0) &&  \
     SLURM_VERSION_NUMBER != SLURM_VERSION_NUM(20, 2, 0) && \
     SLURM_VERSION_NUMBER != SLURM_VERSION_NUM(20, 2, 1)
-    if ((part_ptr->allow_accounts != NULL) &&
-        (strlen(part_ptr->allow_accounts) != 0)) {
-      sp_strn2cpy(strtmp, SPART_INFO_STRING_SIZE, part_ptr->allow_accounts,
-                  SPART_INFO_STRING_SIZE);
-      tmp_lenght = sp_account_check(user_acct, user_acct_count, strtmp);
-      if (tmp_lenght) {
-        /* more then zero in the allow list */
-        if (tmp_lenght != user_acct_count)
-          sp_strn2cat(spData[i].partition_status, SPART_MAX_COLUMN_SIZE, "a",
-                      1);
-      } else {
-        sp_strn2cat(spData[i].partition_status, SPART_MAX_COLUMN_SIZE, "A", 1);
-        if (!show_all_partition) spData[i].visible = 0;
-      }
-    }
 
-    if ((part_ptr->deny_accounts != NULL) &&
-        (strlen(part_ptr->deny_accounts) != 0)) {
-      sp_strn2cpy(strtmp, SPART_INFO_STRING_SIZE, part_ptr->deny_accounts,
-                  SPART_INFO_STRING_SIZE);
-      tmp_lenght = sp_account_check(user_acct, user_acct_count, strtmp);
-      if (tmp_lenght) {
-        /* more then zero in the deny list */
-        if (tmp_lenght != user_acct_count)
-          sp_strn2cat(spData[i].partition_status, SPART_MAX_COLUMN_SIZE, "a",
-                      1);
-        else {
-          sp_strn2cat(spData[i].partition_status, SPART_MAX_COLUMN_SIZE, "A",
-                      1);
-          if (!show_all_partition) spData[i].visible = 0;
-        }
-      }
-    }
-
-    if ((part_ptr->allow_qos != NULL) && (strlen(part_ptr->allow_qos) != 0)) {
-      sp_strn2cpy(strtmp, SPART_INFO_STRING_SIZE, part_ptr->allow_qos,
-                  SPART_INFO_STRING_SIZE);
-      tmp_lenght = sp_account_check(user_qos, user_qos_count, strtmp);
-      if (tmp_lenght) {
-        /* more then zero in the allow list */
-        if (tmp_lenght != user_qos_count)
-          sp_strn2cat(spData[i].partition_status, SPART_MAX_COLUMN_SIZE, "q",
-                      1);
-      } else {
-        sp_strn2cat(spData[i].partition_status, SPART_MAX_COLUMN_SIZE, "Q", 1);
-        if (!show_all_partition) spData[i].visible = 0;
-      }
-    }
-
-    if ((part_ptr->deny_qos != NULL) && (strlen(part_ptr->deny_qos) != 0)) {
-      sp_strn2cpy(strtmp, SPART_INFO_STRING_SIZE, part_ptr->deny_qos,
-                  SPART_INFO_STRING_SIZE);
-      tmp_lenght = sp_account_check(user_qos, user_qos_count, strtmp);
-      if (tmp_lenght) {
-        /* more then zero in the deny list */
-        if (tmp_lenght != user_qos_count)
-          sp_strn2cat(spData[i].partition_status, SPART_MAX_COLUMN_SIZE, "q",
-                      1);
-        else {
-          sp_strn2cat(spData[i].partition_status, SPART_MAX_COLUMN_SIZE, "Q",
-                      1);
-          if (!show_all_partition) spData[i].visible = 0;
-        }
-      }
-    }
-
-    if ((part_ptr->allow_groups != NULL) &&
-        (strlen(part_ptr->allow_groups) != 0)) {
-      sp_strn2cpy(strtmp, SPART_INFO_STRING_SIZE, part_ptr->allow_groups,
-                  SPART_INFO_STRING_SIZE);
-      tmp_lenght = sp_account_check(user_group, user_group_count, strtmp);
-      if (tmp_lenght) {
-        /* more then zero in the allow list */
-        if (tmp_lenght != user_group_count)
-          sp_strn2cat(spData[i].partition_status, SPART_MAX_COLUMN_SIZE, "g",
-                      1);
-      } else {
-        sp_strn2cat(spData[i].partition_status, SPART_MAX_COLUMN_SIZE, "G", 1);
-        if (!show_all_partition) spData[i].visible = 0;
-      }
-    }
+    k=sp_check_permision_set_legend(part_ptr->allow_accounts, user_acct, user_acct_count,
+            spData[i].partition_status,NULL,"a","A");
+    if ((!show_all_partition)&&(k==0)) spData[i].visible = 0;
+     
+    k=sp_check_permision_set_legend(part_ptr->deny_accounts, user_acct, user_acct_count,
+            spData[i].partition_status,"A","a",NULL);
+    if ((!show_all_partition)&&(k==0)) spData[i].visible = 0;
+     
+    k=sp_check_permision_set_legend(part_ptr->allow_qos, user_qos, user_qos_count,
+            spData[i].partition_status,NULL,"q","Q");
+    if ((!show_all_partition)&&(k==0)) spData[i].visible = 0;
+     
+    k=sp_check_permision_set_legend(part_ptr->deny_qos, user_qos, user_qos_count,
+            spData[i].partition_status,"Q","q",NULL);
+    if ((!show_all_partition)&&(k==0)) spData[i].visible = 0;
+     
+    k=sp_check_permision_set_legend(part_ptr->allow_groups, user_group, user_group_count,
+            spData[i].partition_status,NULL,"a","A");
+    if ((!show_all_partition)&&(k==0)) spData[i].visible = 0;
 
 #endif
 
@@ -1304,6 +1190,14 @@ int main(int argc, char *argv[]) {
     sp_partition_print(&(spData[i]), &spheaders, show_max_mem, show_as_date,
                        total_width);
   }
+  if (show_verbose) {
+    for (i = 0; i < partition_count; i++) {
+      if (spData[i].visible == 1) {
+        sp_char_check(legends, SPART_INFO_STRING_SIZE,
+                      spData[i].partition_status, SPART_MAX_COLUMN_SIZE);
+      }
+    }
+  }
 
   /* Common values are printing */
   if (show_all_partition) {
@@ -1367,6 +1261,17 @@ int main(int argc, char *argv[]) {
     sp_headers_print(&spheaders);
     sp_partition_print(&(spData[k]), &spheaders, show_max_mem, show_as_date,
                        total_width);
+  }
+
+  if (show_verbose) {
+    printf("\n   STATUS LABELS:\n");
+    for (i = 0; i < strlen(legends); i++) {
+      for (j = 0; j < legend_count; j++) {
+        if (legends[i] == legend_info[j][0]) {
+          printf("              %s\n", legend_info[j]);
+        }
+      }
+    }
   }
 
 #ifdef SPART_SHOW_STATEMENT
