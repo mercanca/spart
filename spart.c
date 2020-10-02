@@ -1339,7 +1339,8 @@ int main(int argc, char *argv[]) {
         if ((re_str[k] < -58) && (re_str[k] > -62)) m++;
         if (re_str[k] == '\n') re_str[k] = '\0';
       }
-      printf("  %s %-*s %s\n", SPART_STATEMENT_LINEPRE, 92 + m, re_str,
+      //printf("  %s %-*s %s\n", SPART_STATEMENT_LINEPRE, 92 + m, re_str,
+      printf("  %s %-*s %s\n", SPART_STATEMENT_LINEPRE, total_width, re_str,
              SPART_STATEMENT_LINEPOST);
     }
     printf("  %s ", SPART_STATEMENT_LINEPRE);

@@ -19,9 +19,9 @@
 #include <string.h>
 
 /* for UHeM-ITU-Turkey specific settings */
-#define SPART_COMPILE_FOR_UHEM
+/* #define SPART_COMPILE_FOR_UHEM */
 
-#define SPART_SHOW_STATEMENT
+/* #define SPART_SHOW_STATEMENT */
 
 /* if you want to use STATEMENT feature, uncomment
  * SPART_SHOW_STATEMENT at upper line, and set
@@ -215,7 +215,7 @@ int sp_spart_usage() {
 #ifdef SPART_COMPILE_FOR_UHEM
   printf("This is UHeM Version of the spart command.\n");
 #endif
-  printf("spart version 1.4.1\n\n");
+  printf("spart version 1.4.2\n\n");
   exit(1);
 }
 
