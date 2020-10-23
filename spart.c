@@ -319,14 +319,16 @@ int main(int argc, char *argv[]) {
     /* to check that can we read pending jobs info */
     if (conf_info_msg_ptr->private_data & PRIVATE_DATA_JOBS) {
       printf("\tthe spart can not show other users' waiting jobs info!\n");
+      if (show_parameter_L != 1) {
+        spheaders.waiting_resource.visible = 0;
+        spheaders.waiting_other.visible = 0;
+      }
     }
 
-    /* to check that can we read pending jobs info */
     if (conf_info_msg_ptr->private_data & PRIVATE_DATA_NODES) {
       printf("\tthe spart can not show node status info!\n");
     }
 
-    /* to check that can we read pending jobs info */
     if (conf_info_msg_ptr->private_data & PRIVATE_DATA_PARTITIONS) {
       printf("\tthe spart can not show partition info!\n");
     }
@@ -390,7 +392,7 @@ int main(int argc, char *argv[]) {
   }
 
   slurm_list_iterator_destroy(itr);
-  slurm_list_iterator_destroy(itr_qos);
+  if (user_qos_count > 0) slurm_list_iterator_destroy(itr_qos);
   // slurm_list_destroy(qos_list);
   slurm_list_destroy(assoc_list);
   slurm_list_iterator_destroy(itr_qosn);
