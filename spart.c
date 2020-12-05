@@ -26,7 +26,11 @@ int main(int argc, char *argv[]) {
   int total_width = 0;
 
   /* Slurm defined types */
+#if SLURM_VERSION_NUMBER >= SLURM_VERSION_NUM(20, 11, 0)
+  slurm_conf_t *conf_info_msg_ptr = NULL;
+#else
   slurm_ctl_conf_t *conf_info_msg_ptr = NULL;
+#endif
   partition_info_msg_t *part_buffer_ptr = NULL;
   partition_info_t *part_ptr = NULL;
   node_info_msg_t *node_buffer_ptr = NULL;
@@ -339,7 +343,11 @@ int main(int argc, char *argv[]) {
     SLURM_VERSION_NUMBER != SLURM_VERSION_NUM(20, 2, 0) && \
     SLURM_VERSION_NUMBER != SLURM_VERSION_NUM(20, 2, 1)
   /* Getting user account info */
+#if SLURM_VERSION_NUMBER >= SLURM_VERSION_NUM(20, 11, 0)
+  db_conn = slurmdb_connection_get(NULL);
+#else
   db_conn = slurmdb_connection_get();
+#endif
   if (errno != SLURM_SUCCESS) {
     slurm_perror("Can not connect to the slurm database");
     exit(1);
