@@ -340,7 +340,7 @@ If the slurm is not installed at default location, you should add locations of t
  
 After compiling, you can copy the spart file to the default slurm exe directory which is /usr/bin. Alternatively, you can copy spart file to any directory and you should set PATH environment variable. The default slurm man directory is /usr/share/man/man1/. You can copy the man file (spart.1.gz) to this directory, or you can set MANPATH variable. Don't forget to set reading perpisions of the spart and spart.1.gz files for all users.
 
-Alternatively, you can use the ```rpmbuild``` command to compile:
+Alternatively, If you prefer to compile the spart as a rpm package, you can use the ```rpmbuild``` command:
 
  ```rpmbuild -ta spart-1.4.3.tar.gz```
 
