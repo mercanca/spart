@@ -10,7 +10,7 @@
 * [The Cluster and Partition Statements](#the-cluster-and-partition-statements)
 * [Requirements](#requirements)
 * [Compiling](#compiling)
-* [Debug](#debug)
+* [Reporting Bugs](#reporting-bugs)
 
 
 ## Usage
@@ -344,7 +344,7 @@ After compiling, you can copy the spart file to the default slurm exe directory 
 Also, there is no need to have administrative rights (being root) to compile and use. If you want to use
  the spart command as a regular user, you can compile and use at your home directory.
 
-## Debug
+## Reporting Bugs
 
 If you notice a bug of the spart, please report using the issues page of the github site. Thanks.
 
