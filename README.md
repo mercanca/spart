@@ -2,7 +2,16 @@
  A user-oriented partition info command for slurm. It gives a brief view of the cluster.
 
  Slurm does not have a command showing partition info in a user-friendly way. 
- I wrote a command, I hope you will find it useful. 
+ I wrote a command, I hope you will find it useful.
+ 
+## Table of contents
+
+* [Usage](#usage)
+* [The Cluster and Partition Statements](#the-cluster-and-partition-statements)
+* [Requirements](#requirements)
+* [Compiling](#compiling)
+* [Debug](#debug)
+
 
 ## Usage
 
