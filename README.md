@@ -319,6 +319,7 @@ Also, with Slurm 20.02.0 and 20.02.1, the slurm have a bug about to connect the 
 The spart requires, the slurm configured to give permision for reading other users job info,
  node info, and other information.
 
+The Slurm API, can not run correctly on a "Configless" Slurm node. It looks for slurm.conf, and fails. Because of this reason, the spart can not run a node which does not contain the slurm conf files. But, even at a configless slurm cluster, if a node contains the slurm conf files (for example a slurmctl node), spart works correctly.
  
 ## Compiling
 

@@ -25,7 +25,7 @@ int main(int argc, char *argv[]) {
   int k, m, n;
   int total_width = 0;
 
-  /* Slurm defined types */
+/* Slurm defined types */
 #if SLURM_VERSION_NUMBER >= SLURM_VERSION_NUM(20, 11, 0)
   slurm_conf_t *conf_info_msg_ptr = NULL;
 #else
@@ -291,6 +291,13 @@ int main(int argc, char *argv[]) {
     sp_spart_usage();
   }
 
+  if (access("/etc/slurm/slurm.conf", F_OK) != 0) {
+    printf(
+        "ERROR: There is not a /etc/slurm/slurm.conf file!\n       Is this a "
+        "configless slurm node?\n");
+    exit(1);
+  }
+
   if (slurm_load_ctl_conf((time_t)NULL, &conf_info_msg_ptr)) {
     slurm_perror("slurm_load_ctl_conf error");
     exit(1);
@@ -342,7 +349,7 @@ int main(int argc, char *argv[]) {
 #if SLURM_VERSION_NUMBER > SLURM_VERSION_NUM(18, 7, 0) &&  \
     SLURM_VERSION_NUMBER != SLURM_VERSION_NUM(20, 2, 0) && \
     SLURM_VERSION_NUMBER != SLURM_VERSION_NUM(20, 2, 1)
-  /* Getting user account info */
+/* Getting user account info */
 #if SLURM_VERSION_NUMBER >= SLURM_VERSION_NUM(20, 11, 0)
   db_conn = slurmdb_connection_get(NULL);
 #else
@@ -391,7 +398,7 @@ int main(int argc, char *argv[]) {
       for (m = 0; m < user_qos_count; m++) {
         user_qos[n] = malloc(SPART_INFO_STRING_SIZE * sizeof(char));
         qos = slurm_list_next(itr_qos);
-        qos2 = slurmdb_qos_str(qosn_list, atoi(qos));
+        qos2 = (char *)slurmdb_qos_str(qosn_list, atoi(qos));
         sp_strn2cpy(user_qos[n], SPART_INFO_STRING_SIZE, qos2,
                     SPART_INFO_STRING_SIZE);
         n++;
@@ -527,6 +534,8 @@ int main(int argc, char *argv[]) {
       if (strstr(job_parts_str, partition_str) != NULL) {
         if (job_buffer_ptr->job_array[i].job_state == JOB_PENDING) {
           if ((job_buffer_ptr->job_array[i].state_reason == WAIT_RESOURCES) ||
+              (job_buffer_ptr->job_array[i].state_reason ==
+               WAIT_NODE_NOT_AVAIL) ||
               (job_buffer_ptr->job_array[i].state_reason == WAIT_PRIORITY)) {
             spData[j].waiting_resource += job_buffer_ptr->job_array[i].num_cpus;
             if (job_buffer_ptr->job_array[i].user_id == user_id)
@@ -736,7 +745,6 @@ int main(int argc, char *argv[]) {
                     SPART_INFO_STRING_SIZE);
       }
     }
-
     spData[i].free_cpu = free_cpu;
     spData[i].total_cpu = part_ptr->total_cpus;
     spData[i].free_node = free_node;
@@ -1349,7 +1357,7 @@ int main(int argc, char *argv[]) {
         if ((re_str[k] < -58) && (re_str[k] > -62)) m++;
         if (re_str[k] == '\n') re_str[k] = '\0';
       }
-      //printf("  %s %-*s %s\n", SPART_STATEMENT_LINEPRE, 92 + m, re_str,
+      // printf("  %s %-*s %s\n", SPART_STATEMENT_LINEPRE, 92 + m, re_str,
       printf("  %s %-*s %s\n", SPART_STATEMENT_LINEPRE, total_width, re_str,
              SPART_STATEMENT_LINEPOST);
     }
