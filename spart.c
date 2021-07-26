@@ -291,12 +291,13 @@ int main(int argc, char *argv[]) {
     sp_spart_usage();
   }
 
-  if (access("/etc/slurm/slurm.conf", F_OK) != 0) {
-    printf(
-        "ERROR: There is not a /etc/slurm/slurm.conf file!\n       Is this a "
-        "configless slurm node?\n");
-    exit(1);
-  }
+  /*  if (access("/etc/slurm/slurm.conf", F_OK) != 0) {
+      printf(
+          "ERROR: There is not a /etc/slurm/slurm.conf file!\n       Is this a "
+          "configless slurm node?\n");
+      exit(1);
+    }
+  */
 
   if (slurm_load_ctl_conf((time_t)NULL, &conf_info_msg_ptr)) {
     slurm_perror("slurm_load_ctl_conf error");
