@@ -677,7 +677,7 @@ int main(int argc, char *argv[]) {
 
     k = sp_check_permision_set_legend(
         part_ptr->allow_groups, user_group, user_group_count,
-        spData[i].partition_status, NULL, "a", "A");
+        spData[i].partition_status, NULL, "g", "G");
     if ((!show_all_partition) && (k == 0)) spData[i].visible = 0;
 
 #endif
