@@ -27,163 +27,163 @@ void sp_headers_set_defaults(sp_headers_t *sph) {
   sph->hspace.visible = 0;
   sph->hspace.column_width = 17;
   sp_strn2cpy(sph->hspace.line1, sph->hspace.column_width, "           ",
-              sph->hspace.column_width);
+              sph->hspace.column_width+1);
   sp_strn2cpy(sph->hspace.line2, sph->hspace.column_width, "           ",
-              sph->hspace.column_width);
+              sph->hspace.column_width+1);
 #ifdef __slurmdb_cluster_rec_t_defined
   sph->cluster_name.visible = 0;
   sph->cluster_name.column_width = 8;
   sp_strn2cpy(sph->cluster_name.line1, sph->cluster_name.column_width,
-              " CLUSTER", sph->cluster_name.column_width);
+              " CLUSTER", sph->cluster_name.column_width+1);
   sp_strn2cpy(sph->cluster_name.line2, sph->cluster_name.column_width,
-              "    NAME", sph->cluster_name.column_width);
+              "    NAME", sph->cluster_name.column_width+1);
 #endif
   sph->partition_name.visible = 1;
   sph->partition_name.column_width = 10;
   sp_strn2cpy(sph->partition_name.line1, sph->partition_name.column_width,
-              "     QUEUE", sph->partition_name.column_width);
+              "     QUEUE", sph->partition_name.column_width+1);
   sp_strn2cpy(sph->partition_name.line2, sph->partition_name.column_width,
-              " PARTITION", sph->partition_name.column_width);
+              " PARTITION", sph->partition_name.column_width+1);
   sph->partition_status.visible = 1;
   sph->partition_status.column_width = 3;
   sp_strn2cpy(sph->partition_status.line1, sph->partition_status.column_width,
-              "STA", sph->partition_status.column_width);
+              "STA", sph->partition_status.column_width+1);
   sp_strn2cpy(sph->partition_status.line2, sph->partition_status.column_width,
-              "TUS", sph->partition_status.column_width);
+              "TUS", sph->partition_status.column_width+1);
   sph->free_cpu.visible = 1;
   sph->free_cpu.column_width = 6;
   sp_strn2cpy(sph->free_cpu.line1, sph->free_cpu.column_width, "  FREE",
-              sph->free_cpu.column_width);
+              sph->free_cpu.column_width+1);
   sp_strn2cpy(sph->free_cpu.line2, sph->free_cpu.column_width, " CORES",
-              sph->free_cpu.column_width);
+              sph->free_cpu.column_width+1);
   sph->total_cpu.visible = 1;
   sph->total_cpu.column_width = 6;
   sp_strn2cpy(sph->total_cpu.line1, sph->total_cpu.column_width, " TOTAL",
-              sph->total_cpu.column_width);
+              sph->total_cpu.column_width+1);
   sp_strn2cpy(sph->total_cpu.line2, sph->total_cpu.column_width, " CORES",
-              sph->total_cpu.column_width);
+              sph->total_cpu.column_width+1);
   sph->free_node.visible = 1;
   sph->free_node.column_width = 6;
   sp_strn2cpy(sph->free_node.line1, sph->free_node.column_width, "  FREE",
-              sph->free_node.column_width);
+              sph->free_node.column_width+1);
   sp_strn2cpy(sph->free_node.line2, sph->free_node.column_width, " NODES",
-              sph->free_node.column_width);
+              sph->free_node.column_width+1);
   sph->total_node.visible = 1;
   sph->total_node.column_width = 6;
   sp_strn2cpy(sph->total_node.line1, sph->total_node.column_width, " TOTAL",
-              sph->total_node.column_width);
+              sph->total_node.column_width+1);
   sp_strn2cpy(sph->total_node.line2, sph->total_node.column_width, " NODES",
-              sph->total_node.column_width);
+              sph->total_node.column_width+1);
   sph->waiting_resource.visible = 1;
   sph->waiting_resource.column_width = 6;
   sp_strn2cpy(sph->waiting_resource.line1, sph->waiting_resource.column_width,
-              "RESORC", sph->waiting_resource.column_width);
+              "RESORC", sph->waiting_resource.column_width+1);
   sp_strn2cpy(sph->waiting_resource.line2, sph->waiting_resource.column_width,
-              "PENDNG", sph->waiting_resource.column_width);
+              "PENDNG", sph->waiting_resource.column_width+1);
   sph->waiting_other.visible = 1;
   sph->waiting_other.column_width = 6;
   sp_strn2cpy(sph->waiting_other.line1, sph->waiting_other.column_width,
-              " OTHER", sph->waiting_other.column_width);
+              " OTHER", sph->waiting_other.column_width+1);
   sp_strn2cpy(sph->waiting_other.line2, sph->waiting_other.column_width,
-              "PENDNG", sph->waiting_other.column_width);
+              "PENDNG", sph->waiting_other.column_width+1);
   sph->my_running.visible = 1;
   sph->my_running.column_width = 4;
   sp_strn2cpy(sph->my_running.line1, sph->my_running.column_width, "YOUR",
-              sph->my_running.column_width);
+              sph->my_running.column_width+1);
   sp_strn2cpy(sph->my_running.line2, sph->my_running.column_width, " RUN",
-              sph->my_running.column_width);
+              sph->my_running.column_width+1);
   sph->my_waiting_resource.visible = 1;
   sph->my_waiting_resource.column_width = 4;
   sp_strn2cpy(sph->my_waiting_resource.line1,
               sph->my_waiting_resource.column_width, "PEND",
-              sph->my_waiting_resource.column_width);
+              sph->my_waiting_resource.column_width+1);
   sp_strn2cpy(sph->my_waiting_resource.line2,
               sph->my_waiting_resource.column_width, " RES",
-              sph->my_waiting_resource.column_width);
+              sph->my_waiting_resource.column_width+1);
   sph->my_waiting_other.visible = 1;
   sph->my_waiting_other.column_width = 4;
   sp_strn2cpy(sph->my_waiting_other.line1, sph->my_waiting_other.column_width,
-              "PEND", sph->my_waiting_other.column_width);
+              "PEND", sph->my_waiting_other.column_width+1);
   sp_strn2cpy(sph->my_waiting_other.line2, sph->my_waiting_other.column_width,
-              "OTHR", sph->my_waiting_other.column_width);
+              "OTHR", sph->my_waiting_other.column_width+1);
   sph->my_total.visible = 1;
   sph->my_total.column_width = 4;
   sp_strn2cpy(sph->my_total.line1, sph->my_total.column_width, "YOUR",
-              sph->my_total.column_width);
+              sph->my_total.column_width+1);
   sp_strn2cpy(sph->my_total.line2, sph->my_total.column_width, "TOTL",
-              sph->my_total.column_width);
+              sph->my_total.column_width+1);
   sph->min_nodes.visible = 1;
   sph->min_nodes.column_width = 5;
   sp_strn2cpy(sph->min_nodes.line1, sph->min_nodes.column_width, "  MIN",
-              sph->min_nodes.column_width);
+              sph->min_nodes.column_width+1);
   sp_strn2cpy(sph->min_nodes.line2, sph->min_nodes.column_width, "NODES",
-              sph->min_nodes.column_width);
+              sph->min_nodes.column_width+1);
   sph->max_nodes.visible = 1;
   sph->max_nodes.column_width = 5;
   sp_strn2cpy(sph->max_nodes.line1, sph->max_nodes.column_width, "  MAX",
-              sph->max_nodes.column_width);
+              sph->max_nodes.column_width+1);
   sp_strn2cpy(sph->max_nodes.line2, sph->max_nodes.column_width, "NODES",
-              sph->max_nodes.column_width);
+              sph->max_nodes.column_width+1);
   sph->max_cpus_per_node.visible = 0;
   sph->max_cpus_per_node.column_width = 6;
   sp_strn2cpy(sph->max_cpus_per_node.line1, sph->max_cpus_per_node.column_width,
-              "MAXCPU", sph->max_cpus_per_node.column_width);
+              "MAXCPU", sph->max_cpus_per_node.column_width+1);
   sp_strn2cpy(sph->max_cpus_per_node.line2, sph->max_cpus_per_node.column_width,
-              " /NODE", sph->max_cpus_per_node.column_width);
+              " /NODE", sph->max_cpus_per_node.column_width+1);
   sph->max_mem_per_cpu.visible = 0;
   sph->max_mem_per_cpu.column_width = 6;
   sp_strn2cpy(sph->max_mem_per_cpu.line1, sph->max_mem_per_cpu.column_width,
-              "MAXMEM", sph->max_mem_per_cpu.column_width);
+              "MAXMEM", sph->max_mem_per_cpu.column_width+1);
   sp_strn2cpy(sph->max_mem_per_cpu.line2, sph->max_mem_per_cpu.column_width,
-              "GB/CPU", sph->max_mem_per_cpu.column_width);
+              "GB/CPU", sph->max_mem_per_cpu.column_width+1);
   sph->def_mem_per_cpu.visible = 0;
   sph->def_mem_per_cpu.column_width = 6;
   sp_strn2cpy(sph->def_mem_per_cpu.line1, sph->def_mem_per_cpu.column_width,
-              "DEFMEM", sph->def_mem_per_cpu.column_width);
+              "DEFMEM", sph->def_mem_per_cpu.column_width+1);
   sp_strn2cpy(sph->def_mem_per_cpu.line2, sph->def_mem_per_cpu.column_width,
-              "GB/CPU", sph->def_mem_per_cpu.column_width);
+              "GB/CPU", sph->def_mem_per_cpu.column_width+1);
   sph->djt_time.visible = 0;
   sph->djt_time.column_width = 10;
   sp_strn2cpy(sph->djt_time.line1, sph->djt_time.column_width, "   DEFAULT",
-              sph->djt_time.column_width);
+              sph->djt_time.column_width+1);
   sp_strn2cpy(sph->djt_time.line2, sph->djt_time.column_width, "  JOB-TIME",
-              sph->djt_time.column_width);
+              sph->djt_time.column_width+1);
   sph->mjt_time.visible = 1;
   sph->mjt_time.column_width = 10;
   sp_strn2cpy(sph->mjt_time.line1, sph->mjt_time.column_width, "   MAXIMUM",
-              sph->mjt_time.column_width);
+              sph->mjt_time.column_width+1);
   sp_strn2cpy(sph->mjt_time.line2, sph->mjt_time.column_width, "  JOB-TIME",
-              sph->mjt_time.column_width);
+              sph->mjt_time.column_width+1);
   sph->min_core.visible = 1;
   sph->min_core.column_width = 6;
   sp_strn2cpy(sph->min_core.line1, sph->min_core.column_width, " CORES",
-              sph->min_core.column_width);
+              sph->min_core.column_width+1);
   sp_strn2cpy(sph->min_core.line2, sph->min_core.column_width, " /NODE",
-              sph->min_core.column_width);
+              sph->min_core.column_width+1);
   sph->min_mem_gb.visible = 1;
   sph->min_mem_gb.column_width = 6;
   sp_strn2cpy(sph->min_mem_gb.line1, sph->min_mem_gb.column_width, "  NODE",
-              sph->min_mem_gb.column_width);
+              sph->min_mem_gb.column_width+1);
   sp_strn2cpy(sph->min_mem_gb.line2, sph->min_mem_gb.column_width, "MEM-GB",
-              sph->min_mem_gb.column_width);
+              sph->min_mem_gb.column_width+1);
   sph->partition_qos.visible = 1;
   sph->partition_qos.column_width = 6;
   sp_strn2cpy(sph->partition_qos.line1, sph->partition_qos.column_width,
-              "   QOS", sph->partition_qos.column_width);
+              "   QOS", sph->partition_qos.column_width+1);
   sp_strn2cpy(sph->partition_qos.line2, sph->partition_qos.column_width,
-              "  NAME", sph->partition_qos.column_width);
+              "  NAME", sph->partition_qos.column_width+1);
   sph->gres.visible = 0;
   sph->gres.column_width = 12;
   sp_strn2cpy(sph->gres.line1, sph->gres.column_width, " GRES       ",
-              sph->gres.column_width);
+              sph->gres.column_width+1);
   sp_strn2cpy(sph->gres.line2, sph->gres.column_width, "(NODE-COUNT)",
-              sph->gres.column_width);
+              sph->gres.column_width+1);
   sph->features.visible = 0;
   sph->features.column_width = 12;
   sp_strn2cpy(sph->features.line1, sph->features.column_width, " FEATURES   ",
-              sph->features.column_width);
+              sph->features.column_width+1);
   sp_strn2cpy(sph->features.line2, sph->features.column_width, "(NODE-COUNT)",
-              sph->features.column_width);
+              sph->features.column_width+1);
 }
 
 /* Sets all columns as visible */
@@ -228,12 +228,12 @@ void sp_column_header_print(char *line1, char *line2,
   if (spcol->visible) {
     snprintf(cresult, SPART_MAX_COLUMN_SIZE, "%*s", spcol->column_width,
              spcol->line1);
-    sp_strn2cat(line1, SPART_INFO_STRING_SIZE, cresult, spcol->column_width);
+    sp_strn2cat(line1, SPART_INFO_STRING_SIZE, cresult, spcol->column_width+1);
     snprintf(cresult, SPART_MAX_COLUMN_SIZE, "%*s", spcol->column_width,
              spcol->line2);
-    sp_strn2cat(line2, SPART_INFO_STRING_SIZE, cresult, spcol->column_width);
-    sp_strn2cat(line1, SPART_INFO_STRING_SIZE, " ", 1);
-    sp_strn2cat(line2, SPART_INFO_STRING_SIZE, " ", 1);
+    sp_strn2cat(line2, SPART_INFO_STRING_SIZE, cresult, spcol->column_width+1);
+    sp_strn2cat(line1, SPART_INFO_STRING_SIZE, " ", 2);
+    sp_strn2cat(line2, SPART_INFO_STRING_SIZE, " ", 2);
   }
 }
 
@@ -258,16 +258,16 @@ void sp_headers_print(sp_headers_t *sph) {
   sp_column_header_print(line1, line2, &(sph->free_node));
   sp_column_header_print(line1, line2, &(sph->total_node));
   if (!(sph->hspace.visible)) {
-    sp_strn2cat(line1, SPART_INFO_STRING_SIZE, "|", 1);
-    sp_strn2cat(line2, SPART_INFO_STRING_SIZE, "|", 1);
+    sp_strn2cat(line1, SPART_INFO_STRING_SIZE, "|", 2);
+    sp_strn2cat(line2, SPART_INFO_STRING_SIZE, "|", 2);
   }
   sp_column_header_print(line1, line2, &(sph->my_running));
   sp_column_header_print(line1, line2, &(sph->my_waiting_resource));
   sp_column_header_print(line1, line2, &(sph->my_waiting_other));
   sp_column_header_print(line1, line2, &(sph->my_total));
   if (!(sph->hspace.visible)) {
-    sp_strn2cat(line1, SPART_INFO_STRING_SIZE, "| ", 2);
-    sp_strn2cat(line2, SPART_INFO_STRING_SIZE, "| ", 2);
+    sp_strn2cat(line1, SPART_INFO_STRING_SIZE, "| ", 3);
+    sp_strn2cat(line2, SPART_INFO_STRING_SIZE, "| ", 3);
   }
   sp_column_header_print(line1, line2, &(sph->min_nodes));
   sp_column_header_print(line1, line2, &(sph->max_nodes));
@@ -348,11 +348,11 @@ void sp_date_print(uint32_t time_to_show, uint16_t column_width,
       }
       if (thour != 0) {
         snprintf(ctmp, SPART_MAX_COLUMN_SIZE, "%d hour ", thour);
-        sp_strn2cat(cresult, column_width, ctmp, column_width);
+        sp_strn2cat(cresult, column_width, ctmp, column_width+1);
       }
       if (tminute != 0) {
         snprintf(ctmp, SPART_MAX_COLUMN_SIZE, "%d mins ", tminute);
-        sp_strn2cat(cresult, column_width, ctmp, column_width);
+        sp_strn2cat(cresult, column_width, ctmp, column_width+1);
       }
       len = strlen(cresult);
       /* delete last space */

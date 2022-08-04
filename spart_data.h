@@ -68,12 +68,12 @@ int sp_check_permision_set_legend(char *permisions, char **user_spec,
         /* more than zero in the list */
         if (found_count != user_spec_count) {
           /* partial match */
-          sp_strn2cat(legendstr, SPART_MAX_COLUMN_SIZE, r_some, 1);
+          sp_strn2cat(legendstr, SPART_MAX_COLUMN_SIZE, r_some, 2);
         } else {
           /* found_count = ALL */
           if (r_all != NULL) {
             /* this is an deny list */
-            sp_strn2cat(legendstr, SPART_MAX_COLUMN_SIZE, r_all, 1);
+            sp_strn2cat(legendstr, SPART_MAX_COLUMN_SIZE, r_all, 2);
             return 0;
           }
         }
@@ -81,7 +81,7 @@ int sp_check_permision_set_legend(char *permisions, char **user_spec,
         /* found_count = 0 */
         if (r_none != NULL) {
           /* this is an allow list */
-          sp_strn2cat(legendstr, SPART_MAX_COLUMN_SIZE, r_none, 1);
+          sp_strn2cat(legendstr, SPART_MAX_COLUMN_SIZE, r_none, 2);
           return 0;
         }
       }

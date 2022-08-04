@@ -83,7 +83,7 @@ void sp_char_check(char *str, int nstr, const char *chr, int nchr) {
   for (i = 0; i < l; i++) {
     c[0] = chr[i];
     if (strstr(str, c) == NULL) {
-      sp_strn2cat(str, nstr, c, 1);
+      sp_strn2cat(str, nstr, c, 2);
     }
   }
 }

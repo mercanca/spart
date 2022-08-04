@@ -520,7 +520,7 @@ int main(int argc, char *argv[]) {
                 SPART_INFO_STRING_SIZE);
     sp_strn2cat(job_parts_str, SPART_INFO_STRING_SIZE,
                 job_buffer_ptr->job_array[i].partition, SPART_INFO_STRING_SIZE);
-    sp_strn2cat(job_parts_str, SPART_INFO_STRING_SIZE, ",", 1);
+    sp_strn2cat(job_parts_str, SPART_INFO_STRING_SIZE, ",", 2);
 
     for (j = 0; j < partition_count; j++) {
       /* add ',' character at the begining and the end */
@@ -530,7 +530,7 @@ int main(int argc, char *argv[]) {
                   part_buffer_ptr->partition_array[j].name,
                   SPART_INFO_STRING_SIZE);
       sp_strn2cat(partition_str + strlen(partition_str), SPART_INFO_STRING_SIZE,
-                  ",", 1);
+                  ",", 2);
 
       if (strstr(job_parts_str, partition_str) != NULL) {
         if (job_buffer_ptr->job_array[i].job_state == JOB_PENDING) {
@@ -647,9 +647,9 @@ int main(int argc, char *argv[]) {
     /* Partition States from more important to less important
      *  because, there is limited space. */
     if (part_ptr->flags & PART_FLAG_DEFAULT)
-      sp_strn2cat(spData[i].partition_status, SPART_MAX_COLUMN_SIZE, "*", 1);
+      sp_strn2cat(spData[i].partition_status, SPART_MAX_COLUMN_SIZE, "*", 2);
     if (part_ptr->flags & PART_FLAG_HIDDEN)
-      sp_strn2cat(spData[i].partition_status, SPART_MAX_COLUMN_SIZE, ".", 1);
+      sp_strn2cat(spData[i].partition_status, SPART_MAX_COLUMN_SIZE, ".", 2);
 
 #if SLURM_VERSION_NUMBER > SLURM_VERSION_NUM(18, 7, 0) &&  \
     SLURM_VERSION_NUMBER != SLURM_VERSION_NUM(20, 2, 0) && \
@@ -684,27 +684,27 @@ int main(int argc, char *argv[]) {
 
     if (strncmp(user_name, "root", SPART_INFO_STRING_SIZE) == 0) {
       if (part_ptr->flags & PART_FLAG_NO_ROOT) {
-        sp_strn2cat(spData[i].partition_status, SPART_MAX_COLUMN_SIZE, "R", 1);
+        sp_strn2cat(spData[i].partition_status, SPART_MAX_COLUMN_SIZE, "R", 2);
         if (!show_all_partition) spData[i].visible = 0;
       }
     } else {
       if (part_ptr->flags & PART_FLAG_ROOT_ONLY) {
-        sp_strn2cat(spData[i].partition_status, SPART_MAX_COLUMN_SIZE, "R", 1);
+        sp_strn2cat(spData[i].partition_status, SPART_MAX_COLUMN_SIZE, "R", 2);
         if (!show_all_partition) spData[i].visible = 0;
       }
     }
 
     if (!(part_ptr->state_up == PARTITION_UP)) {
       if (part_ptr->state_up == PARTITION_INACTIVE)
-        sp_strn2cat(spData[i].partition_status, SPART_MAX_COLUMN_SIZE, "C", 1);
+        sp_strn2cat(spData[i].partition_status, SPART_MAX_COLUMN_SIZE, "C", 2);
       if (part_ptr->state_up == PARTITION_DRAIN)
-        sp_strn2cat(spData[i].partition_status, SPART_MAX_COLUMN_SIZE, "S", 1);
+        sp_strn2cat(spData[i].partition_status, SPART_MAX_COLUMN_SIZE, "S", 2);
       if (part_ptr->state_up == PARTITION_DOWN)
-        sp_strn2cat(spData[i].partition_status, SPART_MAX_COLUMN_SIZE, "D", 1);
+        sp_strn2cat(spData[i].partition_status, SPART_MAX_COLUMN_SIZE, "D", 2);
     }
 
     if (part_ptr->flags & PART_FLAG_REQ_RESV)
-      sp_strn2cat(spData[i].partition_status, SPART_MAX_COLUMN_SIZE, "r", 1);
+      sp_strn2cat(spData[i].partition_status, SPART_MAX_COLUMN_SIZE, "r", 2);
 
     /* if (part_ptr->flags & PART_FLAG_EXCLUSIVE_USER)
       strncat(spData[i].partition_status, "x", SPART_MAX_COLUMN_SIZE);*/
@@ -768,13 +768,13 @@ int main(int argc, char *argv[]) {
       def_mem_per_cpu = part_ptr->def_mem_per_cpu;
       if (def_mem_per_cpu & MEM_PER_CPU) {
         sp_strn2cpy(spheaders.def_mem_per_cpu.line2,
-                    spheaders.def_mem_per_cpu.column_width, "GB/CPU",
-                    spheaders.def_mem_per_cpu.column_width);
+                    spheaders.def_mem_per_cpu.column_width+1, "GB/CPU",
+                    spheaders.def_mem_per_cpu.column_width+1);
         def_mem_per_cpu = def_mem_per_cpu & (~MEM_PER_CPU);
       } else {
         sp_strn2cpy(spheaders.def_mem_per_cpu.line2,
-                    spheaders.def_mem_per_cpu.column_width, "G/NODE",
-                    spheaders.def_mem_per_cpu.column_width);
+                    spheaders.def_mem_per_cpu.column_width+1, "G/NODE",
+                    spheaders.def_mem_per_cpu.column_width+1);
       }
       spData[i].def_mem_per_cpu = (uint64_t)(def_mem_per_cpu / 1000u);
       if ((def_mem_per_cpu != default_def_mem_per_cpu) && (spData[i].visible))
@@ -783,13 +783,13 @@ int main(int argc, char *argv[]) {
       max_mem_per_cpu = part_ptr->max_mem_per_cpu;
       if (max_mem_per_cpu & MEM_PER_CPU) {
         sp_strn2cpy(spheaders.max_mem_per_cpu.line2,
-                    spheaders.max_mem_per_cpu.column_width, "GB/CPU",
-                    spheaders.max_mem_per_cpu.column_width);
+                    spheaders.max_mem_per_cpu.column_width+1, "GB/CPU",
+                    spheaders.max_mem_per_cpu.column_width+1);
         max_mem_per_cpu = max_mem_per_cpu & (~MEM_PER_CPU);
       } else {
         sp_strn2cpy(spheaders.max_mem_per_cpu.line2,
-                    spheaders.max_mem_per_cpu.column_width, "G/NODE",
-                    spheaders.max_mem_per_cpu.column_width);
+                    spheaders.max_mem_per_cpu.column_width+1, "G/NODE",
+                    spheaders.max_mem_per_cpu.column_width+1);
       }
       spData[i].max_mem_per_cpu = (uint64_t)(max_mem_per_cpu / 1000u);
       if ((max_mem_per_cpu != default_max_mem_per_cpu) && (spData[i].visible))
@@ -831,7 +831,7 @@ int main(int argc, char *argv[]) {
                 SPART_INFO_STRING_SIZE);
     strcpy(spheaders.partition_name.line1, " ");
     for (k = 1; k < m; k++)
-      sp_strn2cat(spheaders.partition_name.line1, partname_lenght, " ", 1);
+      sp_strn2cat(spheaders.partition_name.line1, partname_lenght, " ", 2);
     sp_strn2cat(spheaders.partition_name.line1, partname_lenght, strtmp,
                 partname_lenght);
 
@@ -839,7 +839,7 @@ int main(int argc, char *argv[]) {
                 SPART_INFO_STRING_SIZE);
     strcpy(spheaders.partition_name.line2, " ");
     for (k = 1; k < m; k++)
-      sp_strn2cat(spheaders.partition_name.line2, partname_lenght, " ", 1);
+      sp_strn2cat(spheaders.partition_name.line2, partname_lenght, " ", 2);
     sp_strn2cat(spheaders.partition_name.line2, partname_lenght, strtmp,
                 partname_lenght);
 
@@ -854,7 +854,7 @@ int main(int argc, char *argv[]) {
                 SPART_INFO_STRING_SIZE);
     strcpy(spheaders.cluster_name.line1, " ");
     for (k = 1; k < m; k++)
-      sp_strn2cat(spheaders.cluster_name.line1, clusname_lenght, " ", 1);
+      sp_strn2cat(spheaders.cluster_name.line1, clusname_lenght, " ", 2);
     sp_strn2cat(spheaders.cluster_name.line1, clusname_lenght, strtmp,
                 clusname_lenght);
 
@@ -862,7 +862,7 @@ int main(int argc, char *argv[]) {
                 SPART_INFO_STRING_SIZE);
     strcpy(spheaders.cluster_name.line2, " ");
     for (k = 1; k < m; k++)
-      sp_strn2cat(spheaders.cluster_name.line2, clusname_lenght, " ", 1);
+      sp_strn2cat(spheaders.cluster_name.line2, clusname_lenght, " ", 2);
     sp_strn2cat(spheaders.cluster_name.line2, clusname_lenght, strtmp,
                 clusname_lenght);
 
