@@ -113,6 +113,7 @@ int main(int argc, char *argv[]) {
   int show_gres = 0;
   int show_features = 0;
   int show_all_partition = 0;
+  int show_given_partition = 0;
   int show_as_date = 0;
   int show_cluster_name = 0;
   int show_min_mem_gb = 0;
@@ -131,6 +132,7 @@ int main(int argc, char *argv[]) {
 
   char partition_str[SPART_INFO_STRING_SIZE];
   char job_parts_str[SPART_INFO_STRING_SIZE];
+  char given_part_list[SPART_INFO_STRING_SIZE];
 
   sp_part_info_t *spData = NULL;
   uint32_t partition_count = 0;
@@ -183,121 +185,128 @@ int main(int argc, char *argv[]) {
   sp_headers_set_defaults(&spheaders);
 
   for (k = 1; k < argc; k++) {
-    if (strncmp(argv[k], "-m", 3) == 0) {
-      show_max_mem = 1;
-      spheaders.min_core.column_width = 8;
-      spheaders.min_mem_gb.column_width = 10;
-      continue;
-    }
-
-    if (strncmp(argv[k], "-a", 3) == 0) {
-      show_partition |= SHOW_ALL;
-      show_all_partition = 1;
-      continue;
-    }
-
+    if (argv[k][0] == '-') {
+      for (m = 1; m < strlen(argv[k]); m++) {
+        switch (argv[k][m]) {
+          case 'm':
+            show_max_mem = 1;
+            spheaders.min_core.column_width = 8;
+            spheaders.min_mem_gb.column_width = 10;
+            break;
+          case 'a':
+            show_partition |= SHOW_ALL;
+            show_all_partition = 1;
+            break;
+          case 'p':
+            if ((k + 1) < argc) {
+              sp_strn2cpy(given_part_list, SPART_INFO_STRING_SIZE, argv[k + 1],
+                          SPART_INFO_STRING_SIZE);
+              sp_strn2cat(given_part_list, SPART_INFO_STRING_SIZE, ",", 2);
+              m = INT_MAX;
+              k++;
+              show_partition |= SHOW_ALL;
+              show_all_partition = 1;
+              show_given_partition = 1;
+              continue;
+            } else {
+              printf("\nParameter -p requires partition name(s)!\n");
+              sp_spart_usage();
+              printf("\nParameter -p requires partition name(s)!\n");
+              exit(1);
+            }
+            break;
 #ifdef __slurmdb_cluster_rec_t_defined
-    if (strncmp(argv[k], "-c", 3) == 0) {
-      show_partition |= SHOW_FEDERATION;
-      show_partition &= (~SHOW_LOCAL);
-      spheaders.cluster_name.visible = 1;
-      continue;
-    }
+          case 'c':
+            show_partition |= SHOW_FEDERATION;
+            show_partition &= (~SHOW_LOCAL);
+            spheaders.cluster_name.visible = 1;
+            break;
 #endif
-
-    if (strncmp(argv[k], "-g", 3) == 0) {
-      spheaders.gres.visible = 1;
-      continue;
-    }
-    if (strncmp(argv[k], "-f", 3) == 0) {
-      spheaders.features.visible = 1;
-      continue;
-    }
-
-    if (strncmp(argv[k], "-i", 3) == 0) {
-      show_info = 1;
-      continue;
-    }
-
-    if (strncmp(argv[k], "-v", 3) == 0) {
-      show_verbose = 1;
-      continue;
-    }
-
-    if (strncmp(argv[k], "-t", 3) == 0) {
-      show_as_date = 1;
-      continue;
-    }
-
-    if (strncmp(argv[k], "-s", 3) == 0) {
-      show_gres = 0;
-      show_min_nodes = 0;
-      show_max_nodes = 0;
-      show_max_cpus_per_node = 0;
-      show_max_mem_per_cpu = 0;
-      show_def_mem_per_cpu = 0;
-      show_mjt_time = 0;
-      show_djt_time = 0;
-      show_partition_qos = 0;
-      show_parameter_L = 0;
-      show_simple = 1;
-      spheaders.min_nodes.visible = 0;
-      spheaders.max_nodes.visible = 0;
-      spheaders.max_cpus_per_node.visible = 0;
-      spheaders.max_mem_per_cpu.visible = 0;
-      spheaders.def_mem_per_cpu.visible = 0;
-      spheaders.djt_time.visible = 0;
-      spheaders.mjt_time.visible = 0;
-      spheaders.min_core.visible = 0;
-      spheaders.min_mem_gb.visible = 0;
-      spheaders.partition_qos.visible = 0;
-      spheaders.gres.visible = 0;
-      spheaders.features.visible = 0;
-      continue;
-    }
-
-    if (strncmp(argv[k], "-J", 3) == 0) {
-      show_my_running = 0;
-      show_my_waiting_resource = 0;
-      show_my_waiting_other = 0;
-      show_my_total = 0;
-      continue;
-    }
-
-    if (strncmp(argv[k], "-l", 3) == 0) {
-      sp_headers_set_parameter_L(&spheaders);
-      show_max_mem = 1;
+          case 'g':
+            spheaders.gres.visible = 1;
+            break;
+          case 'f':
+            spheaders.features.visible = 1;
+            break;
+          case 'i':
+            show_info = 1;
+            break;
+          case 'v':
+            show_verbose = 1;
+            break;
+          case 't':
+            show_as_date = 1;
+            break;
+          case 's':
+            show_gres = 0;
+            show_min_nodes = 0;
+            show_max_nodes = 0;
+            show_max_cpus_per_node = 0;
+            show_max_mem_per_cpu = 0;
+            show_def_mem_per_cpu = 0;
+            show_mjt_time = 0;
+            show_djt_time = 0;
+            show_partition_qos = 0;
+            show_parameter_L = 0;
+            show_simple = 1;
+            spheaders.min_nodes.visible = 0;
+            spheaders.max_nodes.visible = 0;
+            spheaders.max_cpus_per_node.visible = 0;
+            spheaders.max_mem_per_cpu.visible = 0;
+            spheaders.def_mem_per_cpu.visible = 0;
+            spheaders.djt_time.visible = 0;
+            spheaders.mjt_time.visible = 0;
+            spheaders.min_core.visible = 0;
+            spheaders.min_mem_gb.visible = 0;
+            spheaders.partition_qos.visible = 0;
+            spheaders.gres.visible = 0;
+            spheaders.features.visible = 0;
+            break;
+          case 'J':
+            show_my_running = 0;
+            show_my_waiting_resource = 0;
+            show_my_waiting_other = 0;
+            show_my_total = 0;
+            break;
+          case 'l':
+            sp_headers_set_parameter_L(&spheaders);
+            show_max_mem = 1;
 #ifdef __slurmdb_cluster_rec_t_defined
-      show_partition |= (SHOW_FEDERATION | SHOW_ALL);
+            show_partition |= (SHOW_FEDERATION | SHOW_ALL);
 #else
-      show_partition |= SHOW_ALL;
+            show_partition |= SHOW_ALL;
 #endif
-      show_gres = 1;
-      show_min_nodes = 1;
-      show_max_nodes = 1;
-      show_max_cpus_per_node = 1;
-      show_max_mem_per_cpu = 1;
-      show_def_mem_per_cpu = 1;
-      show_mjt_time = 1;
-      show_djt_time = 1;
-      show_partition_qos = 1;
-      show_parameter_L = 1;
-      show_all_partition = 1;
-      continue;
-    }
-
-    if (strncmp(argv[k], "-h", 3) != 0)
+            show_gres = 1;
+            show_min_nodes = 1;
+            show_max_nodes = 1;
+            show_max_cpus_per_node = 1;
+            show_max_mem_per_cpu = 1;
+            show_def_mem_per_cpu = 1;
+            show_mjt_time = 1;
+            show_djt_time = 1;
+            show_partition_qos = 1;
+            show_parameter_L = 1;
+            show_all_partition = 1;
+            break;
+          case 'h':
+            sp_spart_usage();
+            exit(1);
+            break;
+          default:
+            printf("\nUnknown parameter: %c\n", argv[k][m]);
+            sp_spart_usage();
+            printf("\nUnknown parameter: %c\n", argv[k][m]);
+            exit(1);
+            break;
+        }
+      }
+    } else {
       printf("\nUnknown parameter: %s\n", argv[k]);
-    sp_spart_usage();
-  }
-
-  /*  if (access("/etc/slurm/slurm.conf", F_OK) != 0) {
-      printf(
-          "ERROR: There is not a /etc/slurm/slurm.conf file!\n       Is this a "
-          "configless slurm node?\n");
+      sp_spart_usage();
+      printf("\nUnknown parameter: %s\n", argv[k]);
       exit(1);
     }
-  */
+  }
 
   if (slurm_load_ctl_conf((time_t)NULL, &conf_info_msg_ptr)) {
     slurm_perror("slurm_load_ctl_conf error");
@@ -768,13 +777,13 @@ int main(int argc, char *argv[]) {
       def_mem_per_cpu = part_ptr->def_mem_per_cpu;
       if (def_mem_per_cpu & MEM_PER_CPU) {
         sp_strn2cpy(spheaders.def_mem_per_cpu.line2,
-                    spheaders.def_mem_per_cpu.column_width+1, "GB/CPU",
-                    spheaders.def_mem_per_cpu.column_width+1);
+                    spheaders.def_mem_per_cpu.column_width + 1, "GB/CPU",
+                    spheaders.def_mem_per_cpu.column_width + 1);
         def_mem_per_cpu = def_mem_per_cpu & (~MEM_PER_CPU);
       } else {
         sp_strn2cpy(spheaders.def_mem_per_cpu.line2,
-                    spheaders.def_mem_per_cpu.column_width+1, "G/NODE",
-                    spheaders.def_mem_per_cpu.column_width+1);
+                    spheaders.def_mem_per_cpu.column_width + 1, "G/NODE",
+                    spheaders.def_mem_per_cpu.column_width + 1);
       }
       spData[i].def_mem_per_cpu = (uint64_t)(def_mem_per_cpu / 1000u);
       if ((def_mem_per_cpu != default_def_mem_per_cpu) && (spData[i].visible))
@@ -783,13 +792,13 @@ int main(int argc, char *argv[]) {
       max_mem_per_cpu = part_ptr->max_mem_per_cpu;
       if (max_mem_per_cpu & MEM_PER_CPU) {
         sp_strn2cpy(spheaders.max_mem_per_cpu.line2,
-                    spheaders.max_mem_per_cpu.column_width+1, "GB/CPU",
-                    spheaders.max_mem_per_cpu.column_width+1);
+                    spheaders.max_mem_per_cpu.column_width + 1, "GB/CPU",
+                    spheaders.max_mem_per_cpu.column_width + 1);
         max_mem_per_cpu = max_mem_per_cpu & (~MEM_PER_CPU);
       } else {
         sp_strn2cpy(spheaders.max_mem_per_cpu.line2,
-                    spheaders.max_mem_per_cpu.column_width+1, "G/NODE",
-                    spheaders.max_mem_per_cpu.column_width+1);
+                    spheaders.max_mem_per_cpu.column_width + 1, "G/NODE",
+                    spheaders.max_mem_per_cpu.column_width + 1);
       }
       spData[i].max_mem_per_cpu = (uint64_t)(max_mem_per_cpu / 1000u);
       if ((max_mem_per_cpu != default_max_mem_per_cpu) && (spData[i].visible))
@@ -822,6 +831,28 @@ int main(int argc, char *argv[]) {
                 SPART_MAX_COLUMN_SIZE);
     tmp_lenght = strlen(part_ptr->name);
     if (tmp_lenght > partname_lenght) partname_lenght = tmp_lenght;
+  }
+
+  if (show_given_partition == 1) {
+    char *strtmp = NULL;
+    char *grestok;
+    char pl[SPART_INFO_STRING_SIZE];
+
+    for (i = 0; i < partition_count; i++) {
+      part_ptr = &part_buffer_ptr->partition_array[i];
+      sp_strn2cpy(pl, SPART_INFO_STRING_SIZE, given_part_list,
+                  SPART_INFO_STRING_SIZE);
+      for (grestok = strtok_r(pl, ",", &strtmp); grestok != NULL;
+           grestok = strtok_r(NULL, ",", &strtmp)) {
+        if (strncmp(part_ptr->name, grestok, SPART_INFO_STRING_SIZE) == 0) {
+          spData[i].visible = 1;
+          break;
+        } else {
+          spData[i].visible = 0;
+        }
+      }
+    }
+    show_all_partition = 0;
   }
 
   if (partname_lenght > spheaders.partition_name.column_width) {

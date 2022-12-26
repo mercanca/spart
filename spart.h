@@ -97,7 +97,7 @@ int sp_spart_usage() {
 #ifdef __slurmdb_cluster_rec_t_defined
       "[-c] "
 #endif
-      "[-g] [-i] [-t] [-f] [-l] [-s] [-J] [-v] [-h]\n\n");
+      "[-g] [-i] [-t] [-f] [-l] [-s] [-J] [-p PARTITION_LIST] [-v] [-h]\n\n");
   printf(
       "This program shows brief partition info with core count of available "
       "nodes and pending jobs.\n\n");
@@ -208,6 +208,9 @@ int sp_spart_usage() {
   printf("\t-s\tthe simple output. spart don't show slurm config columns.\n\n");
   printf("\t-J\tthe output does not shown the info about the user's jobs.\n\n");
   printf(
+      "\t-p PARTITION_LIST\n\t\tthe output shows only the partitions which "
+      "given with comma-seperated \n\t\tPARTITION_LIST.\n\n");
+  printf(
       "\t-l\tall posible columns will be shown, except"
       " the federated clusters column.\n\n");
   printf("\t-v\tshows info about STATUS LABELS.\n\n");
@@ -215,8 +218,8 @@ int sp_spart_usage() {
 #ifdef SPART_COMPILE_FOR_UHEM
   printf("This is UHeM Version of the spart command.\n");
 #endif
-  printf("spart version 1.4.8\n\n");
-  exit(1);
+  printf("spart version 1.5.0\n\n");
+  // exit(1);
 }
 
 /* To store partition info */
