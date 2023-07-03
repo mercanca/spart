@@ -153,6 +153,10 @@ int main(int argc, char *argv[]) {
   struct passwd *pw;
   struct group *gr;
 
+#if SLURM_VERSION_NUMBER >= SLURM_VERSION_NUM(20, 11, 0)
+  slurm_init(NULL);
+#endif
+
   pw = getpwuid(geteuid());
   sp_strn2cpy(user_name, SPART_INFO_STRING_SIZE, pw->pw_name,
               SPART_INFO_STRING_SIZE);
@@ -408,8 +412,8 @@ int main(int argc, char *argv[]) {
       for (m = 0; m < user_qos_count; m++) {
         user_qos[n] = malloc(SPART_INFO_STRING_SIZE * sizeof(char));
         qos = slurm_list_next(itr_qos);
-        qos2 = (char *)slurmdb_qos_str(qosn_list, atoi(qos));
-        sp_strn2cpy(user_qos[n], SPART_INFO_STRING_SIZE, qos2,
+        //qos2 = (char *)slurmdb_qos_str(qosn_list, atoi(qos));
+        sp_strn2cpy(user_qos[n], SPART_INFO_STRING_SIZE, qos,
                     SPART_INFO_STRING_SIZE);
         n++;
       }
