@@ -1,3 +1,7 @@
+ # Due to the GitHub’s the new two-factor authentication (2FA) policy, I can not login to my GitHub account, by September 28th, 2023. Because of this reason, I can not update the code of the spart, or can not reply to the issues. Sorry.
+
+__
+
  # spart
  A user-oriented partition info command for slurm. It gives a brief view of the cluster.
 
